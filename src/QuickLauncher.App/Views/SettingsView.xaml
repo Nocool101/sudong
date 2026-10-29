@@ -98,6 +98,8 @@
                               Checked="Setting_Changed" Unchecked="Setting_Changed"/>
                     <CheckBox x:Name="FloatingButtonBox" Content="显示桌面悬浮按钮（可拖动）" Margin="0,0,0,4"
                               Checked="Setting_Changed" Unchecked="Setting_Changed"/>
+                    <CheckBox x:Name="DebugLogBox" Content="启用调试日志（写入 %TEMP%\ql_debug.log，仅本机，默认关）" Margin="0,0,0,4"
+                              Checked="Setting_Changed" Unchecked="Setting_Changed"/>
                 </StackPanel>
             </Border>
 

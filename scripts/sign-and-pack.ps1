@@ -6,7 +6,7 @@
 #
 # 用法（普通权限即可，无需管理员）：
 #   $env:QL_PFX_PASSWORD = "你的pfx密码"
-#   powershell -ExecutionPolicy Bypass -File scripts\sign-and-pack.ps1 -PfxPath "E:\AI 工作目录\应用启动器证书\yourcert.pfx"
+#   powershell -ExecutionPolicy Bypass -File scripts\sign-and-pack.ps1 -PfxPath "D:\certs\yourcert.pfx"
 # 或：powershell -ExecutionPolicy Bypass -File scripts\sign-and-pack.ps1 -PfxPath "...\xxx.pfx" -PfxPassword "密码"
 
 param(

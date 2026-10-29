@@ -19,12 +19,22 @@ public static class Dbg
 {
     private static readonly string LogPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "ql_debug.log");
     private static readonly object Lock = new();
+    private const long MaxBytes = 1L * 1024 * 1024; // 1MB 上限，超出则重置，避免无限增长
+
+    /// <summary>
+    /// 调试日志（写入 %TEMP%\ql_debug.log）。默认关闭（见 General.DebugLog），
+    /// 仅在用户显式开启时写入；不含任何网络上传。
+    /// </summary>
     public static void Log(string msg)
     {
+        if (!App.Settings.General.DebugLog) return; // 默认关闭
         lock (Lock)
         {
             try
             {
+                var fi = new System.IO.FileInfo(LogPath);
+                if (fi.Exists && fi.Length > MaxBytes)
+                    System.IO.File.WriteAllText(LogPath, string.Empty); // 超限重置
                 System.IO.File.AppendAllText(LogPath,
                     $"{DateTime.Now:HH:mm:ss.fff} [{Environment.CurrentManagedThreadId}] {msg}" + Environment.NewLine);
             }

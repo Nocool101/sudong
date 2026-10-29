@@ -102,6 +102,12 @@ public sealed class GeneralSettings
 
     /// <summary>显示桌面悬浮按钮</summary>
     public bool ShowFloatingButton { get; set; }
+
+    /// <summary>
+    /// 写入调试日志到 %TEMP%\ql_debug.log（仅本机、无任何网络上传）。默认关闭；
+    /// 即便开启也不记录窗口标题，仅记录进程名/类名等定位信息，并限制 1MB 轮转。
+    /// </summary>
+    public bool DebugLog { get; set; }
 }
 
 /// <summary>

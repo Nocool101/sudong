@@ -35,6 +35,7 @@ public partial class SettingsView : UserControl
         TrackUsageBox.IsChecked = s.General.TrackUsage;
         PlaySoundsBox.IsChecked = s.Appearance.PlaySounds;
         FloatingButtonBox.IsChecked = s.General.ShowFloatingButton;
+        DebugLogBox.IsChecked = s.General.DebugLog;
         UpdateLabels();
     }
 
@@ -61,6 +62,7 @@ public partial class SettingsView : UserControl
         s.General.TrackUsage = TrackUsageBox.IsChecked == true;
         s.Appearance.PlaySounds = PlaySoundsBox.IsChecked == true;
         s.General.ShowFloatingButton = FloatingButtonBox.IsChecked == true;
+        s.General.DebugLog = DebugLogBox.IsChecked == true;
 
         ((App)Application.Current).SaveSettings();
         ((App)Application.Current).ApplyFloatingButtonSetting();
@@ -91,7 +93,7 @@ public partial class SettingsView : UserControl
         {
             ((App)Application.Current).ExportConfig(dlg.FileName);
             SavedText.Text = $"已导出配置 {DateTime.Now:HH:mm:ss}";
-            MessageBox.Show($"配置已导出到：\n{dlg.FileName}", "速动",
+            MessageBox.Show($"配置已导出到：\n{dlg.FileName}\n\n⚠️ 该包含全部动作内容（文本、脚本、变量、统计），分享给他人前请先检查并移除敏感信息。", "速动",
                 MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception ex)

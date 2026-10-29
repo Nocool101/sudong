@@ -88,6 +88,25 @@ dotnet run --project src/QuickLauncher.App
 
 > 开机自启由 `Services/StartupService.cs` 以「计划任务·登录时·普通权限(LIMITED)」管理；运行期数据写在 `%LOCALAPPDATA%\QuickLauncher`（普通权限可写，与安装位置解耦）。
 
+## 安全与隐私
+- **完全本地运行**：无遥测、无统计上报、无任何网络请求（唯一联网行为是「联网搜索」动作交给本地默认浏览器打开）。所有数据仅存本机 `%LOCALAPPDATA%\QuickLauncher`，**不上传任何服务器**。
+- 详见 [PRIVACY.md](PRIVACY.md) 与 [SECURITY.md](SECURITY.md)。
+- **权限**：以普通权限（`asInvoker`）运行、启动不弹 UAC；脚本动作（C#/JS/Python）在你本机以你的用户权限执行，等同于手动运行，请仅运行你信任的脚本。
+- **调试日志默认关闭**，且不记录窗口标题，可在设置中按需开启。
+
+## 下载校验（v1.0.0）
+发布产物未做 Authenticode 数字签名，请用 SHA256 自行校验完整性：
+
+| 文件 | SHA256 |
+|---|---|
+| `速动-v1.0.0-win-x64.zip` | `be42702f2e2207051e7807b706b48fb57443691a5645c9c1e751ab4ad48c1899` |
+| `速动-Setup.exe` | `d735def17918a35b3fdfae87899bf1868bf4546e9fdceb258d887101ae41dd2c` |
+
+```powershell
+Get-FileHash -Algorithm SHA256 .\速动-v1.0.0-win-x64.zip
+Get-FileHash -Algorithm SHA256 .\速动-Setup.exe
+```
+
 ## 项目结构
 
 ```

@@ -45,3 +45,6 @@ Thumbs.db
 
 # 本地私有文档（不公开到 GitHub）
 docs/发布流程.md
+
+# 外部安全审计报告（本地私有，不上传 GitHub）
+*审计报告*.md

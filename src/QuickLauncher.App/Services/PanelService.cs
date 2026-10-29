@@ -72,7 +72,7 @@ public sealed class PanelService : IPanelService
 
         // 诊断：记录弹面板时的真实前台窗口，用于定位“下区串到别的程序”类问题
         var fgInfo = SceneMatcher.GetStableForegroundInfo();
-        Dbg.Log($"ShowPanel: fg proc={fgInfo.process} class={fgInfo.className} title={fgInfo.title}");
+        Dbg.Log($"ShowPanel: fg proc={fgInfo.process} class={fgInfo.className}");
 
         // 上区：全局场景页面（任何程序都显示）
         var globalMatch = _matcher.MatchGlobal(s => s.PanelPageId);

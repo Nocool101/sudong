@@ -51,7 +51,7 @@
 ### 3.2 硬前提（必须同时满足，否则 `uiAccess="true"` 被系统忽略、退回普通）
 1. **可执行文件必须数字签名**：证书链须连到本机"**受信任的根证书颁发机构**"，且发布者受信任。
 2. **必须安装在"安全位置"**：`%ProgramFiles%`（或 `Program Files (x86)`、`Windows\System32`）下。
-   - 开发期的 `bin\Debug` / E 盘路径**不满足** → 需改为安装到 `C:\Program Files\QuickLauncher\`。
+   - 开发期的 `bin\Debug` 等非安全位置**不满足** → 需改为安装到 `C:\Program Files\QuickLauncher\`。
 
 ---
 
@@ -61,7 +61,7 @@
 |---|---|---|
 | manifest 权限 | `requireAdministrator` | `asInvoker` + `uiAccess="true"` |
 | 启动 UAC | 每次弹 | **不弹** |
-| 安装位置 | `bin\Debug`（E 盘） | `C:\Program Files\QuickLauncher\` |
+| 安装位置 | `bin\Debug`（非 Program Files） | `C:\Program Files\QuickLauncher\` |
 | 代码签名 | 无 | **必须**（自签名用于本机；OV/EV 用于分发） |
 | 开机自启 | 计划任务·登录时·**最高权限** | 计划任务·登录时·**普通权限(LIMITED)** |
 | 子进程权限 | 全继承管理员 | 普通权限 |
@@ -159,7 +159,7 @@ schtasks /Create /TN "QuickLauncher" /TR "\"C:\Program Files\QuickLauncher\Quick
 ## 九、风险与注意事项
 
 1. **签名是硬门槛**：未签名或不受信任 → `uiAccess=true` 失效，退回普通权限，yuzu 内又无法唤起。**本机测试**务必把自签名证书装入"受信任的根"+"受信任的发布者"。
-2. **安装位置是硬门槛**：必须位于 Program Files 等安全位置；`bin\Debug`/E 盘无效。开发期调试会变麻烦，靠 `deploy.ps1` 缓解（build→部署→签名→运行）。
+2. **安装位置是硬门槛**：必须位于 Program Files 等安全位置；`bin\Debug` 等非安全位置无效。开发期调试会变麻烦，靠 `deploy.ps1` 缓解（build→部署→签名→运行）。
 3. **开发流程变重**：每次改动需"构建+签名+复制到 Program Files"才能验证 UIAccess 行为；建议平时仍可跑 bin 调试非权限相关功能，权限相关验证走 deploy。
 4. **分发考量**：正式分发需 OV/EV 证书，否则用户机器 UIAccess 不生效（会退回普通权限）。
 5. **Program Files 写入需管理员**：仅安装/更新时需要；运行期数据写 `%LOCALAPPDATA%`（普通可写），不影响。

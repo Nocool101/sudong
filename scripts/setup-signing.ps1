@@ -64,3 +64,8 @@ Write-Host ""
 Write-Host "✅ 证书配置完成。" -ForegroundColor Green
 Write-Host "   .pfx：$PfxPath"
 Write-Host "   下一步（管理员 PowerShell）：powershell -ExecutionPolicy Bypass -File scripts\deploy.ps1"
+Write-Host ""
+Write-Host "⚠️ 安全提示：自签名证书已导入「受信任的根 / 受信任的发布者」（仅本机测试）。" -ForegroundColor Yellow
+Write-Host "   测试完成后如需撤销，删除这两处存储中的证书（Thumbprint 见上面输出）："
+Write-Host "   Remove-Item Cert:\LocalMachine\Root\<Thumbprint>, Cert:\LocalMachine\TrustedPublisher\<Thumbprint>"
+Write-Host "   并删除私钥文件：Remove-Item `"$PfxPath`""

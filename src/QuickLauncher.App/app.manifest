@@ -13,7 +13,7 @@
              硬前提（缺一即被系统忽略、退回普通权限，导致 yuzu 内无法唤起）：
                1) 可执行文件必须数字签名，且证书链连到本机「受信任的根证书颁发机构」；
                2) 必须安装到安全位置（%ProgramFiles% / Program Files (x86) / System32）。
-             故开发期 bin\Debug、E 盘路径下 UIAccess 不生效，需经 deploy.ps1 安装到
+             故开发期 bin\Debug 等非安全位置下 UIAccess 不生效，需经 deploy.ps1 安装到
              C:\Program Files\QuickLauncher 并签名后验证。
 
              开源版默认关闭 UIAccess（uiAccess="false"）：程序以普通 asInvoker 权限运行，

@@ -26,6 +26,7 @@ jobs:
           dotnet publish src/QuickLauncher.App/QuickLauncher.App.csproj
           -c Release -r win-x64 --self-contained true
           -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:DebugType=none -p:DebugSymbols=false
           -o dist/publish
 
       - name: 便携版 zip
