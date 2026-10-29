@@ -4,7 +4,7 @@
 > 状态（开源路线）：**默认关闭 UIAccess**。开源版以 `asInvoker` 直接可运行、不依赖代码签名；本步（UIAccess + 签名 + 计划任务）作为**可选增强**保留在 `scripts/` 与本文档中，需要者自行签名 + 装到 Program Files 后把 `app.manifest` 的 `uiAccess` 改为 `true` 即可启用。
 > 目标：在**保留"开机自启 + 在 yuzu/任务管理器等管理员应用内可用"**的前提下，去掉 `requireAdministrator` 的代价（每次启动弹 UAC、子进程全继承管理员、外部启动动作/网页预览失效等）。
 > 方法：照抄原版 Quicker 的权限模型 —— `asInvoker + UIAccess(uiAccess=true)`，配合**代码签名 + 安装到 Program Files**。
-> 关联文档：`Quicker复刻分析报告.md`、`Quicker调研报告.md`
+> 关联文档：`Quicker调研分析报告.md`、`Quicker调研报告.md`
 
 ---
 

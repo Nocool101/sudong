@@ -1,4 +1,4 @@
-# Quicker 复刻调研报告
+# Quicker 调研报告
 
 > 来源：getquicker.net 官方文档（KC/Manual 使用手册、KC/Help 组合动作开发）、docs.getquicker.net（2.0）。均为官方文档可确认事实，未确认处已标注。
 
