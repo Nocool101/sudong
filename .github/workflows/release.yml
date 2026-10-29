@@ -37,14 +37,24 @@ jobs:
 
       - name: 编译安装包 (Inno)
         shell: cmd
+        continue-on-error: true
         run: '"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" scripts\sudong.iss'
 
-      - name: 上传产物到 GitHub Release
+      - name: 上传便携版 zip
+        if: always()
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            dist/速动-${{ github.ref_name }}-win-x64.zip
-            dist/速动-Setup.exe
+          files: dist/速动-${{ github.ref_name }}-win-x64.zip
           generate_release_notes: true
+          fail_on_unmatched_files: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 上传安装包
+        if: always()
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/速动-Setup.exe
+          fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
