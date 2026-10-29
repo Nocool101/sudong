@@ -1,0 +1,44 @@
+<UserControl x:Class="QuickLauncher.App.Views.HotkeysView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{StaticResource Brush.BgBase}">
+
+    <DockPanel Margin="24">
+        <!-- 页头 -->
+        <StackPanel DockPanel.Dock="Top" Margin="0,0,0,16">
+            <TextBlock Text="扩展热键" FontSize="20" FontWeight="Bold"
+                       Foreground="{StaticResource Brush.TextPrimary}"/>
+            <TextBlock Text="通过引导键 + 动作键触发动作，支持修饰键组合" FontSize="12"
+                       Foreground="{StaticResource Brush.TextMuted}" Margin="0,3,0,0"/>
+        </StackPanel>
+
+        <!-- 工具栏 -->
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,14">
+            <Button Content="＋ 新建扩展热键" Click="NewHotkeyButton_Click"
+                    Style="{StaticResource Btn.Primary}" Margin="0,0,8,0"/>
+            <Button Content="删除" Click="DeleteHotkeyButton_Click" Style="{StaticResource Btn.Danger}"/>
+            <TextBlock Text="引导键 + 动作键（可加修饰键）。单独快速按引导键可触发空动作键条目。"
+                       Foreground="{StaticResource Brush.TextMuted}" FontSize="11.5"
+                       VerticalAlignment="Center" Margin="16,0,0,0"/>
+        </StackPanel>
+
+        <!-- 热键列表（卡片容器） -->
+        <Border Background="{StaticResource Brush.BgCard}" BorderBrush="{StaticResource Brush.Stroke}"
+                BorderThickness="1" CornerRadius="12">
+            <ListBox x:Name="HotkeysList" Background="Transparent" BorderThickness="0" Padding="6"
+                     HorizontalContentAlignment="Stretch"
+                     MouseDoubleClick="HotkeysList_MouseDoubleClick">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Margin="6,7">
+                            <TextBlock Text="{Binding Keys}" FontSize="14"
+                                       Foreground="{StaticResource Brush.Brand}" FontWeight="Bold"/>
+                            <TextBlock Text="{Binding ActionName}" FontSize="11.5"
+                                       Foreground="{StaticResource Brush.TextMuted}" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Border>
+    </DockPanel>
+</UserControl>

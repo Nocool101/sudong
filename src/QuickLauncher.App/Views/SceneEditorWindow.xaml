@@ -1,0 +1,67 @@
+<Window x:Class="QuickLauncher.App.Views.SceneEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="场景编辑器" Width="480" Height="420"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource Brush.BgBase}">
+
+    <DockPanel Margin="16">
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right"
+                    Margin="0,12,0,0">
+            <Button Content="保存" IsDefault="True" Click="SaveButton_Click"
+                    Width="90" Height="32" Margin="0,0,8,0"
+                    Background="{StaticResource Brush.Gradient}" Foreground="White" BorderThickness="0"/>
+            <Button Content="取消" IsCancel="True"
+                    Width="90" Height="32" Background="{StaticResource Brush.BgCardHover}" Foreground="{StaticResource Brush.TextSecondary}" BorderThickness="0"/>
+        </StackPanel>
+
+        <StackPanel>
+            <DockPanel Margin="0,0,0,10">
+                <TextBlock Text="名称" Foreground="{StaticResource Brush.TextSecondary}" Width="80" VerticalAlignment="Center"/>
+                <TextBox x:Name="NameBox" Background="{StaticResource Brush.BgCardHover}" Foreground="White" BorderThickness="0" Padding="8,6"/>
+            </DockPanel>
+            <DockPanel Margin="0,0,0,10">
+                <TextBlock Text="类型" Foreground="{StaticResource Brush.TextSecondary}" Width="80" VerticalAlignment="Center"/>
+                <ComboBox x:Name="TypeCombo" Background="{StaticResource Brush.BgCardHover}" Foreground="White" BorderThickness="0" Padding="8,6">
+                    <ComboBoxItem Content="全局"/>
+                    <ComboBoxItem Content="应用程序（按进程）"/>
+                    <ComboBoxItem Content="自定义（进程/类名/标题）"/>
+                </ComboBox>
+            </DockPanel>
+            <DockPanel Margin="0,0,0,10">
+                <TextBlock Text="进程匹配" Foreground="{StaticResource Brush.TextSecondary}" Width="80" VerticalAlignment="Center"/>
+                <TextBox x:Name="ProcessBox" Background="{StaticResource Brush.BgCardHover}" Foreground="White" BorderThickness="0" Padding="8,6"
+                         ToolTip="支持 * 通配，如 chrome*"/>
+            </DockPanel>
+            <DockPanel Margin="0,0,0,10">
+                <TextBlock Text="窗口类名" Foreground="{StaticResource Brush.TextSecondary}" Width="80" VerticalAlignment="Center"/>
+                <TextBox x:Name="ClassBox" Background="{StaticResource Brush.BgCardHover}" Foreground="White" BorderThickness="0" Padding="8,6"/>
+            </DockPanel>
+            <DockPanel Margin="0,0,0,10">
+                <TextBlock Text="窗口标题" Foreground="{StaticResource Brush.TextSecondary}" Width="80" VerticalAlignment="Center"/>
+                <TextBox x:Name="TitleBox" Background="{StaticResource Brush.BgCardHover}" Foreground="White" BorderThickness="0" Padding="8,6"/>
+            </DockPanel>
+            <Grid Margin="0,0,0,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="80"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="面板页" Foreground="{StaticResource Brush.TextSecondary}" VerticalAlignment="Center"/>
+                <ComboBox x:Name="PanelPageCombo" Grid.Column="1" DisplayMemberPath="Name" SelectedValuePath="Id"
+                          VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Content="＋ 新建页" Click="NewPageButton_Click"
+                            Padding="10,4" Margin="0,0,6,0" Background="{StaticResource Brush.Gradient}" Foreground="White"
+                            BorderThickness="0" Cursor="Hand" ToolTip="为此场景创建专用动作页"/>
+                    <Button Content="编辑页" Click="EditPageButton_Click"
+                            Padding="10,4" Background="{StaticResource Brush.BgCardHover}" Foreground="{StaticResource Brush.TextSecondary}"
+                            BorderThickness="0" Cursor="Hand" ToolTip="编排所选动作页的磁贴"/>
+                </StackPanel>
+            </Grid>
+            <TextBlock Foreground="{StaticResource Brush.TextMuted}" FontSize="10" Margin="80,0,0,12" TextWrapping="Wrap"
+                       Text="选择此场景专用动作页；应用对应程序时面板加载该页。未选则回落到全局场景页面。"/>
+            <CheckBox x:Name="EnabledBox" Content="启用此场景" Foreground="{StaticResource Brush.TextPrimary}" Margin="80,0,0,0"/>
+        </StackPanel>
+    </DockPanel>
+</Window>

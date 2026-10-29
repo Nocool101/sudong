@@ -1,0 +1,35 @@
+<UserControl x:Class="QuickLauncher.App.Views.StepParamEditor"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{StaticResource Brush.BgBase}">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="14">
+        <StackPanel x:Name="Root">
+            <TextBlock x:Name="HeaderText" Foreground="White" FontSize="14" FontWeight="SemiBold"
+                       Margin="0,0,0,4"/>
+            <TextBlock x:Name="DescText" Foreground="{StaticResource Brush.TextMuted}" FontSize="11" TextWrapping="Wrap"
+                       Margin="0,0,0,12"/>
+
+            <!-- 参数编辑区（动态生成） -->
+            <StackPanel x:Name="ParamsPanel"/>
+
+            <!-- 输出参数 -->
+            <TextBlock x:Name="OutputHeader" Text="输出到变量" Foreground="{StaticResource Brush.TextSecondary}" FontSize="12"
+                       Margin="0,14,0,6" Visibility="Collapsed"/>
+            <StackPanel x:Name="OutputsPanel"/>
+
+            <!-- 容器步骤子步骤提示 -->
+            <Border x:Name="ChildrenHint" Background="#331A1E27" CornerRadius="4" Padding="10,8"
+                    Margin="0,14,0,0" Visibility="Collapsed">
+                <StackPanel>
+                    <TextBlock Text="此步骤包含子步骤（如果/循环/步骤组）" Foreground="{StaticResource Brush.TextSecondary}" FontSize="11"/>
+                    <TextBlock x:Name="ChildrenCountText" Foreground="{StaticResource Brush.TextPrimary}" FontSize="12"
+                               Margin="0,4,0,0"/>
+                    <Button x:Name="EditChildrenButton" Content="编辑子步骤" Click="EditChildrenButton_Click"
+                            HorizontalAlignment="Left" Margin="0,8,0,0" Padding="12,4"
+                            Background="{StaticResource Brush.Gradient}" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

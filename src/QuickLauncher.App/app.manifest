@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<assembly manifestVersion="1.0" xmlns="urn:schemas-microsoft-com:asm.v1">
+  <assemblyIdentity version="2.0.0.0" name="QuickLauncher.App" />
+  <trustInfo xmlns="urn:schemas-microsoft-com:asm.v2">
+    <security>
+      <requestedPrivileges xmlns="urn:schemas-microsoft-com:asm.v3">
+        <!-- 照抄原版 Quicker 的权限模型：asInvoker + UIAccess。
+             uiAccess="true" 让程序以「中完整性 + UIAccess 特权」运行，可绕过 UIPI 特权隔离，
+             从而接收管理员窗口（yuzu/Ryujinx/任务管理器）内的键鼠输入，
+             并让 SendInput 合成输入送达这些窗口；但程序本身不是管理员、启动不弹 UAC、
+             由其启动的子进程为普通权限（消除 requireAdministrator 的副作用）。
+
+             硬前提（缺一即被系统忽略、退回普通权限，导致 yuzu 内无法唤起）：
+               1) 可执行文件必须数字签名，且证书链连到本机「受信任的根证书颁发机构」；
+               2) 必须安装到安全位置（%ProgramFiles% / Program Files (x86) / System32）。
+             故开发期 bin\Debug、E 盘路径下 UIAccess 不生效，需经 deploy.ps1 安装到
+             C:\Program Files\QuickLauncher 并签名后验证。
+
+             开源版默认关闭 UIAccess（uiAccess="false"）：程序以普通 asInvoker 权限运行，
+             直接 dotnet run / dotnet build 即可运行，启动不弹 UAC。
+
+             可选增强：如需在 yuzu / 任务管理器等“以管理员运行”的窗口内唤起面板并发送键鼠，
+             可把下面的 uiAccess 改为 "true" 启用 UIAccess。但 UIAccess 有三项硬前提，缺一即被系统忽略，
+             且未签名时会被 Windows 拒绝启动（错误 740/577）：
+               1) 可执行文件必须数字签名（公共信任的 OV/EV 证书，或本机自签名并导入受信任根）；
+               2) 必须安装到安全位置（%ProgramFiles% 等）；
+               3) 证书链连到本机“受信任的根证书颁发机构”。
+             参考 scripts/deploy.ps1（本机自签名部署）或 scripts/sign-and-pack.ps1（正式证书）。 -->
+        <requestedExecutionLevel level="asInvoker" uiAccess="false" />
+      </requestedPrivileges>
+    </security>
+  </trustInfo>
+  <compatibility xmlns="urn:schemas-microsoft-com:asm.compatibility.v1">
+    <application>
+      <!-- Windows 10 / 11 -->
+      <supportedOS Id="{8e0f7a12-bfb3-4fe8-b9a5-48fd50a15a9a}" />
+    </application>
+  </compatibility>
+  <application xmlns="urn:schemas-microsoft-com:asm.v3">
+    <windowsSettings>
+      <dpiAware xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">true/pm</dpiAware>
+      <dpiAwareness xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">PerMonitorV2</dpiAwareness>
+    </windowsSettings>
+  </application>
+</assembly>

@@ -1,0 +1,43 @@
+<Window x:Class="QuickLauncher.App.Views.FloatingButtonWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="速动悬浮按钮"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Width="52" Height="52"
+        Topmost="True"
+        ShowInTaskbar="False"
+        ShowActivated="False"
+        ResizeMode="NoResize">
+
+    <Grid>
+        <!-- 品牌渐变球体 -->
+        <Ellipse x:Name="Ball" Width="46" Height="46"
+                 Fill="{StaticResource Brush.Gradient}" Stroke="#99FFFFFF" StrokeThickness="1"
+                 Cursor="Hand"
+                 MouseLeftButtonDown="Ball_MouseLeftButtonDown"
+                 MouseLeftButtonUp="Ball_MouseLeftButtonUp"
+                 MouseMove="Ball_MouseMove"
+                 MouseRightButtonUp="Ball_MouseRightButtonUp">
+            <Ellipse.Effect>
+                <DropShadowEffect BlurRadius="12" ShadowDepth="2" Opacity="0.6"/>
+            </Ellipse.Effect>
+        </Ellipse>
+
+        <!-- 左上高光，增强立体感 -->
+        <Ellipse Width="20" Height="12" Fill="#40FFFFFF"
+                 HorizontalAlignment="Left" VerticalAlignment="Top" Margin="11,7,0,0"
+                 IsHitTestVisible="False">
+            <Ellipse.Effect>
+                <BlurEffect Radius="5"/>
+            </Ellipse.Effect>
+        </Ellipse>
+
+        <!-- 白色闪电（与图标一致） -->
+        <Viewbox Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"
+                 IsHitTestVisible="False">
+            <Path Fill="White" Data="M 13,2 L 5,13.5 L 10,13.5 L 8.5,22 L 17.5,10.5 L 12.5,10.5 Z"/>
+        </Viewbox>
+    </Grid>
+</Window>

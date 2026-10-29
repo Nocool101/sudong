@@ -1,0 +1,42 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\QuickLauncher.Core\QuickLauncher.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 配置一键导入/导出（打包数据目录为 zip） -->
+    <PackageReference Include="System.IO.Compression.ZipFile" Version="4.3.0" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net7.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <!-- 引用 app.manifest：asInvoker + UIAccess(uiAccess=true)。程序以「中完整性 + UIAccess 特权」运行，
+         可在 yuzu/任务管理器等管理员窗口内唤起并让 SendInput 生效；启动不弹 UAC、由其启动的子进程为普通权限。
+         硬前提：exe 必须「已签名 + 位于 Program Files 等安全位置」UIAccess 才生效（见 scripts/deploy.ps1）。 -->
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+
+    <!-- 应用图标（exe/任务栏/窗口图标） -->
+    <ApplicationIcon>assets\app.ico</ApplicationIcon>
+
+    <!-- 产品信息：用户可见应用名为「速动」 -->
+    <Product>速动</Product>
+    <AssemblyTitle>速动</AssemblyTitle>
+    <Description>速动 · 全局效率操作面板（鼠标中键/Ctrl 唤出，快速执行预设动作）</Description>
+    <Company>速动</Company>
+    <Version>1.0.0</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- 界面中显示的应用 Logo/图标（WPF Resource，pack URI 引用） -->
+    <Resource Include="assets\logo.png" />
+    <Resource Include="assets\app.ico" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,159 @@
+<Window x:Class="QuickLauncher.App.Views.IconPickerDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="选择图标" Width="460" Height="560"
+        WindowStartupLocation="CenterOwner"
+        Topmost="True"
+        Background="{StaticResource Brush.BgBase}" WindowStyle="None" ResizeMode="NoResize">
+
+    <Border BorderBrush="{StaticResource Brush.Stroke}" BorderThickness="1">
+        <DockPanel Margin="14">
+
+            <!-- 标题 + 预览 -->
+            <StackPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+                <DockPanel Margin="0,0,0,10">
+                    <TextBlock Text="选择图标" Foreground="{StaticResource Brush.TextPrimary}" FontSize="15" FontWeight="SemiBold"
+                               VerticalAlignment="Center"/>
+                    <Button Content="✕" DockPanel.Dock="Right" Click="CancelButton_Click"
+                            Background="Transparent" Foreground="{StaticResource Brush.TextMuted}" BorderThickness="0"
+                            Padding="8,2" Cursor="Hand"/>
+                </DockPanel>
+                <DockPanel>
+                    <TextBlock Text="预览" Foreground="{StaticResource Brush.TextSecondary}" Width="48" VerticalAlignment="Center"/>
+                    <Border x:Name="PreviewBorder" Width="48" Height="48" CornerRadius="6"
+                            Background="#33FFFFFF" Margin="0,0,10,0">
+                        <Grid>
+                            <TextBlock x:Name="PreviewText" Text="▶" FontSize="24" Foreground="{StaticResource Brush.Brand}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Image x:Name="PreviewImage" Width="32" Height="32"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed"/>
+                        </Grid>
+                    </Border>
+                    <TextBlock x:Name="PreviewDesc" Text="字符：▶" Foreground="{StaticResource Brush.TextMuted}" FontSize="11"
+                               VerticalAlignment="Center" TextWrapping="Wrap"/>
+                </DockPanel>
+            </StackPanel>
+
+            <!-- 底部按钮 -->
+            <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right"
+                        Margin="0,12,0,0">
+                <Button Content="确定" IsDefault="True" Click="OkButton_Click"
+                        Width="80" Height="30" Margin="0,0,8,0"
+                        Background="{StaticResource Brush.Gradient}" Foreground="White" BorderThickness="0"/>
+                <Button Content="取消" IsCancel="True"
+                        Width="80" Height="30" Background="{StaticResource Brush.BgCardHover}" Foreground="{StaticResource Brush.TextSecondary}" BorderThickness="0"/>
+            </StackPanel>
+
+            <!-- 来源切换 -->
+            <TabControl Background="Transparent" BorderThickness="0" Padding="0">
+                <TabControl.Resources>
+                    <Style TargetType="TabItem">
+                        <Setter Property="Foreground" Value="{StaticResource Brush.TextSecondary}"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="TabItem">
+                                    <Border x:Name="bd" Background="Transparent" Padding="14,6" Margin="0,0,4,0"
+                                            CornerRadius="4">
+                                        <ContentPresenter ContentSource="Header"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter TargetName="bd" Property="Background" Value="{StaticResource Brush.Brand}"/>
+                                            <Setter Property="Foreground" Value="White"/>
+                                        </Trigger>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="bd" Property="Background" Value="#33FFFFFF"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </TabControl.Resources>
+
+                <!-- 字符 / Emoji -->
+                <TabItem Header="字符">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,8,0,0">
+                        <WrapPanel x:Name="CharGrid" Orientation="Horizontal"/>
+                    </ScrollViewer>
+                </TabItem>
+
+                <!-- FontAwesome -->
+                <TabItem Header="FontAwesome">
+                    <StackPanel Margin="0,12,0,0">
+                        <TextBlock Text="图标名" Foreground="{StaticResource Brush.TextSecondary}" FontSize="12" Margin="0,0,0,4"/>
+                        <ComboBox x:Name="FaNameCombo" IsEditable="True" Text="Solid_Play"
+                                  Background="{StaticResource Brush.BgCardHover}" Foreground="{StaticResource Brush.TextPrimary}" BorderThickness="0"
+                                  Padding="8,6" Margin="0,0,0,12"
+                                  SelectionChanged="FaInput_Changed" LostFocus="FaInput_Changed"/>
+                        <TextBlock Text="颜色" Foreground="{StaticResource Brush.TextSecondary}" FontSize="12" Margin="0,0,0,4"/>
+                        <DockPanel Margin="0,0,0,12">
+                            <TextBox x:Name="FaColorBox" Text="#FF0078D7"
+                                     Background="{StaticResource Brush.BgCardHover}" Foreground="{StaticResource Brush.TextPrimary}" BorderThickness="0"
+                                     Padding="8,6" TextChanged="FaInput_Changed"/>
+                            <Button Content="取色..." DockPanel.Dock="Right" Click="FaColorPick_Click"
+                                    Margin="6,0,0,0" Padding="10,4" Background="{StaticResource Brush.BgCardHover}"
+                                    Foreground="{StaticResource Brush.TextSecondary}" BorderThickness="0" Cursor="Hand"/>
+                        </DockPanel>
+                        <TextBlock Foreground="{StaticResource Brush.TextMuted}" FontSize="11" TextWrapping="Wrap"
+                                   Text="生成 [fa:图标名:颜色] 语法。常用名：Solid_Play、Solid_Bolt、Solid_Globe、Solid_Folder、Solid_File、Solid_Keyboard、Solid_Comment、Solid_Scroll、Solid_FileImport、Solid_Gear、Solid_Search、Solid_Lock、Solid_Thumbtack、Solid_Music、Solid_Bell、Solid_Rocket、Solid_Clock、Solid_Calendar、Solid_Bullseye、Solid_Mouse、Solid_Desktop、Solid_Link、Solid_Exclamation、Solid_Heart、Solid_Star、Solid_Envelope、Solid_Trash、Solid_ArrowDown、Solid_ArrowUp、Solid_Pause、Solid_Redo"/>
+                    </StackPanel>
+                </TabItem>
+
+                <!-- 应用程序 / 库文件：提取真实应用图标 -->
+                <TabItem Header="应用程序">
+                    <StackPanel Margin="0,12,0,0">
+                        <TextBlock Text="程序/库文件（exe / dll / icl / ico）" Foreground="{StaticResource Brush.TextSecondary}" FontSize="12" Margin="0,0,0,4"/>
+                        <DockPanel>
+                            <Button Content="浏览..." DockPanel.Dock="Right" Click="AppBrowse_Click"
+                                    Margin="6,0,0,0" Padding="12,4" Background="{StaticResource Brush.BgCardHover}"
+                                    Foreground="{StaticResource Brush.TextSecondary}" BorderThickness="0" Cursor="Hand"/>
+                            <TextBox x:Name="AppPathBox" Background="{StaticResource Brush.BgCardHover}" Foreground="{StaticResource Brush.TextPrimary}"
+                                     BorderThickness="0" Padding="8,6"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,12,0,0">
+                            <TextBlock Text="图标" Foreground="{StaticResource Brush.TextSecondary}" FontSize="12"
+                                       VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <Button Content="‹" Click="AppIconPrev_Click" Width="28" Height="26"
+                                    Background="{StaticResource Brush.BgCardHover}" Foreground="{StaticResource Brush.TextSecondary}" BorderThickness="0" Cursor="Hand"/>
+                            <TextBlock x:Name="AppIconIndexText" Text="— / —" Foreground="{StaticResource Brush.TextPrimary}" FontSize="12"
+                                       VerticalAlignment="Center" Margin="8,0" MinWidth="56" TextAlignment="Center"/>
+                            <Button Content="›" Click="AppIconNext_Click" Width="28" Height="26"
+                                    Background="{StaticResource Brush.BgCardHover}" Foreground="{StaticResource Brush.TextSecondary}" BorderThickness="0" Cursor="Hand"/>
+                        </DockPanel>
+                        <TextBlock x:Name="AppHint" Foreground="{StaticResource Brush.TextMuted}" FontSize="11" TextWrapping="Wrap" Margin="0,12,0,0"
+                                   Text="浏览选择程序后自动提取其内嵌图标并缓存；多图标程序可用 ‹ › 切换。支持 .exe/.dll/.icl/.ico 及开始菜单 .lnk 快捷方式。"/>
+                    </StackPanel>
+                </TabItem>
+
+                <!-- 图片文件 -->
+                <TabItem Header="图片">
+                    <StackPanel Margin="0,12,0,0">
+                        <TextBlock Text="图片路径（png/ico/jpg）" Foreground="{StaticResource Brush.TextSecondary}" FontSize="12" Margin="0,0,0,4"/>
+                        <DockPanel>
+                            <Button Content="浏览..." DockPanel.Dock="Right" Click="ImageBrowse_Click"
+                                    Margin="6,0,0,0" Padding="12,4" Background="{StaticResource Brush.BgCardHover}"
+                                    Foreground="{StaticResource Brush.TextSecondary}" BorderThickness="0" Cursor="Hand"/>
+                            <TextBox x:Name="ImagePathBox" Background="{StaticResource Brush.BgCardHover}" Foreground="{StaticResource Brush.TextPrimary}"
+                                     BorderThickness="0" Padding="8,6" TextChanged="ImageInput_Changed"/>
+                        </DockPanel>
+                        <TextBlock Foreground="{StaticResource Brush.TextMuted}" FontSize="11" TextWrapping="Wrap" Margin="0,10,0,0"
+                                   Text="也可以直接输入图片文件路径。"/>
+                    </StackPanel>
+                </TabItem>
+
+                <!-- 网络图片 -->
+                <TabItem Header="网址">
+                    <StackPanel Margin="0,12,0,0">
+                        <TextBlock Text="图片地址（URL）" Foreground="{StaticResource Brush.TextSecondary}" FontSize="12" Margin="0,0,0,4"/>
+                        <TextBox x:Name="UrlBox" Background="{StaticResource Brush.BgCardHover}" Foreground="{StaticResource Brush.TextPrimary}"
+                                 BorderThickness="0" Padding="8,6" TextChanged="UrlInput_Changed"/>
+                        <TextBlock Foreground="{StaticResource Brush.TextMuted}" FontSize="11" TextWrapping="Wrap" Margin="0,10,0,0"
+                                   Text="生成 [url:图片地址] 语法。"/>
+                    </StackPanel>
+                </TabItem>
+            </TabControl>
+
+        </DockPanel>
+    </Border>
+</Window>
