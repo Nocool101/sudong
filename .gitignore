@@ -12,6 +12,7 @@
 build/
 发布版/
 artifacts/
+dist/
 # 安装包 / 备份 zip 不入库
 *.zip
 

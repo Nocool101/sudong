@@ -1,0 +1,50 @@
+name: Release
+
+# 打 tag 触发自动发布（便携 zip + 安装包），或手动触发
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest   # net7.0-windows / WPF / Inno 需 Windows
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '7.0.x'
+
+      - name: Publish (self-contained single-file, win-x64)
+        run: >
+          dotnet publish src/QuickLauncher.App/QuickLauncher.App.csproj
+          -c Release -r win-x64 --self-contained true
+          -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+          -o dist/publish
+
+      - name: 便携版 zip
+        shell: pwsh
+        run: Compress-Archive -Path dist/publish/* -DestinationPath "dist/速动-${{ github.ref_name }}-win-x64.zip" -Force
+
+      - name: 安装 Inno Setup
+        run: choco install innosetup -y --no-progress
+
+      - name: 编译安装包 (Inno)
+        shell: cmd
+        run: '"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" scripts\sudong.iss'
+
+      - name: 上传产物到 GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/速动-${{ github.ref_name }}-win-x64.zip
+            dist/速动-Setup.exe
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
