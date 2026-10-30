@@ -63,7 +63,7 @@
 # 构建
 dotnet build
 
-# 运行测试（63 个单元测试）
+# 运行测试（78 个单元测试）
 dotnet test
 
 # 启动应用
@@ -137,7 +137,7 @@ QuickLauncher/
 │       ├── Scenes/SceneMatcher.cs   # 场景匹配
 │       ├── Services/PanelService.cs # 面板窗口管理
 │       └── Views/                   # 面板、编辑器、设置等窗口
-└── tests/QuickLauncher.Tests/       # xunit 测试（63 个）
+└── tests/QuickLauncher.Tests/       # xunit 测试（78 个）
 ```
 
 ## 架构要点
