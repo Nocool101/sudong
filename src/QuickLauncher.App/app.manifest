@@ -4,33 +4,27 @@
   <trustInfo xmlns="urn:schemas-microsoft-com:asm.v2">
     <security>
       <requestedPrivileges xmlns="urn:schemas-microsoft-com:asm.v3">
-        <!-- 照抄原版 Quicker 的权限模型：asInvoker + UIAccess。
-             uiAccess="true" 让程序以「中完整性 + UIAccess 特权」运行，可绕过 UIPI 特权隔离，
-             从而接收管理员窗口（yuzu/Ryujinx/任务管理器）内的键鼠输入，
-             并让 SendInput 合成输入送达这些窗口；但程序本身不是管理员、启动不弹 UAC、
-             由其启动的子进程为普通权限（消除 requireAdministrator 的副作用）。
+        <!-- 默认清单：普通权限（asInvoker），启动不弹 UAC。
+             任何人 clone 后 `dotnet build` / `dotnet run` 都能直接运行，无需代码签名、无需管理员权限。
 
-             硬前提（缺一即被系统忽略、退回普通权限，导致 yuzu 内无法唤起）：
-               1) 可执行文件必须数字签名，且证书链连到本机「受信任的根证书颁发机构」；
-               2) 必须安装到安全位置（%ProgramFiles% / Program Files (x86) / System32）。
-             故开发期 bin\Debug 等非安全位置下 UIAccess 不生效，需经 deploy.ps1 安装到
-             C:\Program Files\QuickLauncher 并签名后验证。
+             【UIAccess 是可选增强，不是默认】
+             UIAccess（uiAccess="true"）用于在「以管理员运行的窗口」内也能唤出面板、并让 SendInput
+             合成输入送达那些窗口（yuzu / 任务管理器 / 某些需要提权的软件）。它有硬前提，缺一即被系统
+             忽略；且未签名时 Windows 会直接拒绝启动（错误 740/577）：
+               1) 可执行文件已代码签名，且证书链连到「受信任的根证书颁发机构」；
+               2) 安装在 C:\Program Files\ 等需要 UAC 提示的安全位置；
+               3) 发布者证书在「受信任的发布者」存储中。
 
-             开源版默认关闭 UIAccess（uiAccess="false"）：程序以普通 asInvoker 权限运行，
-             直接 dotnet run / dotnet build 即可运行，启动不弹 UAC。
+             因此 UIAccess 版本单独放在 app.uiaccess.manifest，仅在【签名成功后】产出：
+               dotnet publish ... -p:UIAccessManifest=true
+             开发机、便携版、以及无证书的普通发布一律使用本文件（uiAccess=false）。
 
-             可选增强：如需在 yuzu / 任务管理器等“以管理员运行”的窗口内唤起面板并发送键鼠，
-             可把下面的 uiAccess 改为 "true" 启用 UIAccess。但 UIAccess 有三项硬前提，缺一即被系统忽略，
-             且未签名时会被 Windows 拒绝启动（错误 740/577）：
-               1) 可执行文件必须数字签名（公共信任的 OV/EV 证书，或本机自签名并导入受信任根）；
-               2) 必须安装到安全位置（%ProgramFiles% 等）；
-               3) 证书链连到本机“受信任的根证书颁发机构”。
-             参考 scripts/deploy.ps1（本机自签名部署）或 scripts/sign-and-pack.ps1（正式证书）。 -->
+             详见 docs/第2步-UIAccess改造计划.md 与 scripts/ 下各脚本。 -->
         <requestedExecutionLevel level="asInvoker" uiAccess="false" />
       </requestedPrivileges>
     </security>
   </trustInfo>
-  <compatibility xmlns="urn:schemas-microsoft-com:asm.compatibility.v1">
+  <compatibility xmlns="urn:schemas-microsoft-com:compatibility.v1">
     <application>
       <!-- Windows 10 / 11 -->
       <supportedOS Id="{8e0f7a12-bfb3-4fe8-b9a5-48fd50a15a9a}" />

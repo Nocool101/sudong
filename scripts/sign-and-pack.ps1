@@ -31,7 +31,7 @@ $pub = Join-Path $root "build\publish\ql-dev.cer"
 
 Write-Host "==> [1/4] 发布(自包含单文件 win-x64)"
 $proj = Join-Path $root "src\QuickLauncher.App\QuickLauncher.App.csproj"
-dotnet publish $proj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o (Join-Path $root "build\publish") -v minimal
+dotnet publish $proj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:UIAccessManifest=true -o (Join-Path $root "build\publish") -v minimal
 if ($LASTEXITCODE -ne 0) { throw "发布失败" }
 
 Write-Host "==> [2/4] 用正式证书签名(含时间戳)"
@@ -48,6 +48,9 @@ Write-Host "==> [4/4] 生成 OV 版安装脚本并编译"
 $iss = Get-Content $issBase -Raw -Encoding UTF8
 # 去掉"导入自签名证书"的 certutil 步骤（OV/EV 公共信任，无需本地导入）
 $iss = [regex]::Replace($iss, '(?m)^.*certutil.*\r?\n', '')
+# 注意：不要删除整个 [Run] 段——其中的 schtasks /Delete（清理旧版计划任务残留）必须保留：
+# 该任务由安装程序（管理员）创建，普通令牌进程删除会“拒绝访问”，只能在提权的
+# 安装程序上下文中清理。删完 certutil 后 [Run] 段仅剩该条目与注释，Inno 编译正常。
 $ovIss = Join-Path $root "build\sudong-ov.iss"
 $utf8Bom = New-Object System.Text.UTF8Encoding($true)
 [System.IO.File]::WriteAllText($ovIss, $iss, $utf8Bom)

@@ -1,7 +1,28 @@
 # 第 2 步计划：改用 UIAccess（照抄 Quicker 原版权限模型）
 
 > 状态：**代码与脚本已实施并加固**。已核实 `app.manifest`=asInvoker+uiAccess、`StartupService`=/RL LIMITED、csproj 引用 manifest；Release 构建通过（0 错误）。本次执行定位并修复了阻碍落地的问题：① 两个 `.ps1` 缺 UTF-8 BOM → PowerShell 5.1 按 GBK 误读中文、语法解析失败（已补 BOM，这很可能是此前部署/签名始终没跑成的真正原因）；② `deploy.ps1` 依赖 PATH 中的 signtool（本机装在 Windows Kits，已改为自动定位）；③ `setup-signing.ps1` 使用本环境不支持的 `-CodeSigningCert` 参数（已改为按 EKU 1.3.6.1.5.5.7.3.3 手动过滤）；④ 新增 `scripts/bootstrap.ps1` 一键串联「证书→部署+签名」。
-> 状态（开源路线）：**默认关闭 UIAccess**。开源版以 `asInvoker` 直接可运行、不依赖代码签名；本步（UIAccess + 签名 + 计划任务）作为**可选增强**保留在 `scripts/` 与本文档中，需要者自行签名 + 装到 Program Files 后把 `app.manifest` 的 `uiAccess` 改为 `true` 即可启用。
+> 状态（开源路线）：**默认关闭 UIAccess**。开源版以 `asInvoker` 直接可运行、不依赖代码签名；本步（UIAccess + 签名 + 注册表 Run 项）作为**可选增强**保留在 `scripts/` 与本文档中。**不需修改任何清单文件**——默认的 `app.manifest` 保持 `uiAccess="false"`，签名后用 `-p:UIAccessManifest=true` 即可产出 UIAccess 版本（见下方「双清单变体」）。
+
+> **⚠️ 重要更正（2026-10-30 实测）：「计划任务」开机自启与 UIAccess 互斥，已改为注册表 Run 项。**
+>
+> 本文档多处写的「计划任务·登录时·普通权限(LIMITED)」经实测**不可行**，且失败是**静默**的，务必按以下结论执行：
+>
+> - **现象**：计划任务 `\QuickLauncher` 状态 Ready、触发器「登录时」Enabled、运行级别 Limited 全部正常，但登录后程序不启动。
+> - **实测结果码**：`Start-ScheduledTask` 手动触发 → `LastTaskResult = 0x800702E4` = **740 ERROR_ELEVATION_REQUIRED**；进程未创建（`Get-Process` 为空）。登录时自动触发则为 `0x800710E0`。
+> - **根因**：`uiAccess="true"` 的程序只能由**中完整性**进程启动。Task Scheduler **服务自身以 LocalSystem（高完整性）运行**，`schtasks` 的 `/RL LIMITED` 仅降权【目标进程】的令牌，**并不改变 Task Scheduler 作为父进程的身份**，故 CreateProcess 被拒 → 740。
+> - **对照组（证明 exe 本身没问题）**：同一 exe 从 PowerShell（中完整性）`Start-Process` → **正常启动**。
+> - **结论**：UIAccess 程序的开机自启必须用**注册表 `HKCU\...\Run`**（由 `explorer.exe`，中完整性桌面外壳，在用户登录后启动）。这也与原版 Quicker 的实际形态一致。
+>
+> 已落地的改动：`Services/StartupService.cs`（schtasks → Run 项，保留一次性清理旧计划任务）、`app.uiaccess.manifest`（**新增**，`uiAccess="true"`，默认不被 csproj 引用）与 `app.manifest`（默认 `uiAccess="false"`，任何人 clone 后都能直接构建运行）、`build/sudong.iss` 与 `scripts/sudong.iss`（`[Run]` 的 schtasks 改为 `[Registry]` 段，`Flags: uninsdeletevalue`）。
+>
+> **双清单变体（2026-10-30 追加）**：UIAccess 改为构建开关，而不是改仓库里的文件。
+> ```powershell
+> dotnet publish src/QuickLauncher.App -c Release -r win-x64 --self-contained true `
+>   -p:PublishSingleFile=true -p:UIAccessManifest=true
+> ```
+> `QuickLauncher.App.csproj` 按 `$(UIAccessManifest)` 在两个清单间切换。**不要用 `-p:ApplicationManifest=...`**——该属性是全局的，会作用到 `QuickLauncher.Core` 并导致 CS1926（找不到清单文件）。
+>
+> **铁律：`uiAccess` 与自启方式必须配套。** 若把 `uiAccess` 改回 `false`，自启可任选；但只要 `uiAccess="true"`，就**不能**用计划任务。
 > 目标：在**保留"开机自启 + 在 yuzu/任务管理器等管理员应用内可用"**的前提下，去掉 `requireAdministrator` 的代价（每次启动弹 UAC、子进程全继承管理员、外部启动动作/网页预览失效等）。
 > 方法：照抄原版 Quicker 的权限模型 —— `asInvoker + UIAccess(uiAccess=true)`，配合**代码签名 + 安装到 Program Files**。
 > 关联文档：`Quicker调研分析报告.md`、`Quicker调研报告.md`
@@ -95,9 +116,10 @@
 
 | 文件 | 改动 |
 |---|---|
-| `src/QuickLauncher.App/app.manifest` | `level="asInvoker" uiAccess="true"` |
+| `src/QuickLauncher.App/app.uiaccess.manifest` | `level="asInvoker" uiAccess="true"`（新增；仅在签名后用 `-p:UIAccessManifest=true` 产出） |
+| `src/QuickLauncher.App/app.manifest` | 默认 `level="asInvoker" uiAccess="false"`（无需修改，保证开发机可构建可运行） |
 | `src/QuickLauncher.App/Services/StartupService.cs` | 计划任务 `/RL` 改 `LIMITED`；`ExePath` 用安装路径；（可选）VBS 启动 |
-| `src/QuickLauncher.App/QuickLauncher.App.csproj` | 已引用 `app.manifest`，无需改；如需 Release 配置/输出路径再调整 |
+| `src/QuickLauncher.App/QuickLauncher.App.csproj` | 按 `$(UIAccessManifest)` 条件在 `app.manifest` / `app.uiaccess.manifest` 间切换 |
 | `deploy.ps1`（新增，仓库根或 scripts/） | build + 复制到 Program Files + signtool 签名 |
 | `README.md` / `docs/*` | 更新启动/自启/权限说明 |
 

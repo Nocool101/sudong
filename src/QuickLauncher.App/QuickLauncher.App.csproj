@@ -15,10 +15,28 @@
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
-    <!-- 引用 app.manifest：asInvoker + UIAccess(uiAccess=true)。程序以「中完整性 + UIAccess 特权」运行，
-         可在 yuzu/任务管理器等管理员窗口内唤起并让 SendInput 生效；启动不弹 UAC、由其启动的子进程为普通权限。
-         硬前提：exe 必须「已签名 + 位于 Program Files 等安全位置」UIAccess 才生效（见 scripts/deploy.ps1）。 -->
-    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- 引用 app.manifest：默认 asInvoker + uiAccess="false"。任何人 clone 后
+         `dotnet build` / `dotnet run` 都能直接运行，不需要代码签名、不需要管理员权限。
+
+         【UIAccess 为可选增强变体】app.uiaccess.manifest（uiAccess="true"）不被默认引用，
+         仅在产物【已签名】后产出：
+           dotnet publish ... -p:UIAccessManifest=true
+         UIAccess 的硬前提（缺一即被系统忽略，未签名时直接拒绝启动 740/577）：
+           1) exe 已签名且证书链连到「受信任的根证书颁发机构」；
+           2) 安装在 %ProgramFiles% 等安全位置；
+           3) 发布者证书在「受信任的发布者」存储中。
+         Windows 只要求「签名 + 被系统信任」，【不要求 OV/EV 等级】。
+
+         注意：UIAccess 与开机自启方式耦合——计划任务(Task Scheduler=LocalSystem 高完整性)启动本程序
+         会返回 740 而静默失败，故自启用注册表 HKCU Run 项（explorer.exe 中完整性启动），
+         见 Services/StartupService.cs。详见 docs/第2步-UIAccess改造计划.md。 -->
+    <!-- 清单选择（双变体）：
+         默认 app.manifest            → asInvoker + uiAccess="false"，任何人 clone 后可直接 build/run；
+         -p:UIAccessManifest=true 时 → app.uiaccess.manifest → uiAccess="true"，仅供【签名后】的安装版使用。
+         注意：不要用 -p:ApplicationManifest=... 切换——该属性是全局的，会作用到 QuickLauncher.Core
+         并导致 CS1926（找不到清单文件）。用下面的 UIAccessManifest 开关只影响本项目。 -->
+    <ApplicationManifest Condition="'$(UIAccessManifest)' != 'true'">app.manifest</ApplicationManifest>
+    <ApplicationManifest Condition="'$(UIAccessManifest)' == 'true'">app.uiaccess.manifest</ApplicationManifest>
 
     <!-- 应用图标（exe/任务栏/窗口图标） -->
     <ApplicationIcon>assets\app.ico</ApplicationIcon>

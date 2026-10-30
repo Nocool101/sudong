@@ -9,7 +9,10 @@
 *.pdb
 
 # ============ 发布 / 打包中间与产物 ============
-build/
+# 用 build/* 而非 build/：git 无法重新包含「已被忽略目录」内的文件，
+# 而 build\sudong.iss 是 scripts\sign-and-pack.ps1 的基础输入，必须入库。
+build/*
+!build/sudong.iss
 发布版/
 artifacts/
 dist/

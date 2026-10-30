@@ -71,7 +71,7 @@ public partial class SettingsView : UserControl
         SavedText.Text = $"已自动保存 {DateTime.Now:HH:mm:ss}";
     }
 
-    /// <summary>设置/取消开机自启（改为“计划任务·登录时·最高权限”，替代注册表 Run 项）</summary>
+    /// <summary>设置/取消开机自启（注册表 HKCU Run 项；由资源管理器以中完整性启动，这是 UIAccess 程序唯一可靠的自启方式）</summary>
     private void ApplyStartup(bool enable)
     {
         var (ok, msg) = QuickLauncher.App.Services.StartupService.Apply(enable);

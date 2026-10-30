@@ -41,12 +41,24 @@ Source: "..\dist\publish\*"; DestDir: "{app}"; \
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExe}"; WorkingDir: "{app}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExe}"; WorkingDir: "{app}"; Tasks: desktopicon
 
+[Registry]
+; 开机自启：HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run（由 explorer.exe 中完整性启动）。
+; 本版 manifest 为 uiAccess="false"，用计划任务也能启动；但统一走 Run 项可与 UIAccess 版
+; （build\sudong.iss）共用同一套自启逻辑，减少分支差异。卸载时由 uninsdeletevalue 自动清理。
+; ValueData 三层引号 = 一个字面 "，故写入值为 "{app}\{#MyAppExe}"（路径含空格必须加引号）。
+; 注意：PrivilegesRequired=admin 下写 HKCU 会触发 Inno 的 UsedUserAreasWarning；
+; 程序自身 App.OnStartup 中的 StartupService.Apply(true) 会用当前用户 HKCU 幂等重写，作为主保障。
+Root: HKCU; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; \
+    ValueName: "{#MyAppNameEn}"; ValueData: """{app}\{#MyAppExe}"""; Flags: uninsdeletevalue
+
 [Run]
-; 开机自启：计划任务·登录时·普通权限(LIMITED)
-Filename: "schtasks.exe"; Parameters: "/Create /TN ""QuickLauncher"" /TR ""\""{app}\{#MyAppExe}\"""" /SC ONLOGON /RL LIMITED /F"; Flags: runhidden; StatusMsg: "正在配置开机自启（计划任务）..."
+; 安装时清理旧版 schtasks 计划任务残留（该任务由安装程序创建，普通令牌进程删除会
+; “拒绝访问”，必须在提权的安装程序上下文中执行；见 build\sudong.iss 同款注释）。
+Filename: "schtasks.exe"; Parameters: "/Delete /TN ""QuickLauncher"" /F"; Flags: runhidden
 
 [UninstallRun]
-Filename: "schtasks.exe"; Parameters: "/Delete /TN ""QuickLauncher"" /F"; Flags: runhidden; RunOnceId: "DelStartupTask"
+; 清理旧版可能残留的 schtasks 计划任务（一次性迁移，防止两处并存）
+Filename: "schtasks.exe"; Parameters: "/Delete /TN ""QuickLauncher"" /F"; Flags: runhidden; RunOnceId: "DelLegacyStartupTask"
 
 [Code]
 // 安装文件前结束正在运行的旧实例（安装程序已是管理员，避免占用导致复制失败）

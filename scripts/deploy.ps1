@@ -52,11 +52,17 @@ if (-not (Test-Admin)) {
     exit 2
 }
 
-$src = Join-Path $PSScriptRoot "..\src\QuickLauncher.App\bin\Release\net7.0-windows"
+$src = Join-Path $PSScriptRoot "..\build\publish"
 
-Write-Host "==> [1/4] 构建 Release" -ForegroundColor Cyan
-dotnet build $Project -c Release -v minimal
-if ($LASTEXITCODE -ne 0) { throw "构建失败（dotnet build 返回 $LASTEXITCODE）" }
+Write-Host "==> [1/4] 发布 Release（自包含单文件）" -ForegroundColor Cyan
+# 必须用 dotnet publish：dotnet build 生成的 apphost 不会嵌入 app.manifest 的
+# <requestedExecutionLevel>，而是用 SDK 默认的 asInvoker/uiAccess=false，
+# 导致部署后 UIAccess 静默失效（管理员窗口内无法唤起）。publish 才会正确嵌入自定义清单。
+dotnet publish $Project -c Release -r win-x64 --self-contained true `
+    -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true `
+    -p:UIAccessManifest=true `
+    -o $src -v minimal
+if ($LASTEXITCODE -ne 0) { throw "发布失败（dotnet publish 返回 $LASTEXITCODE）" }
 
 Write-Host "==> [2/4] 停止正在运行的旧实例" -ForegroundColor Cyan
 Stop-Process -Name "QuickLauncher.App" -Force -ErrorAction SilentlyContinue

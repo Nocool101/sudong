@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<assembly manifestVersion="1.0" xmlns="urn:schemas-microsoft-com:asm.v1">
+  <assemblyIdentity version="2.0.0.0" name="QuickLauncher.App" />
+  <trustInfo xmlns="urn:schemas-microsoft-com:asm.v2">
+    <security>
+      <requestedPrivileges xmlns="urn:schemas-microsoft-com:asm.v3">
+        <!-- UIAccess 清单（可选增强变体）：程序以「中完整性 + UIAccess 特权」运行，可绕过 UIPI 特权隔离，
+             从而接收管理员窗口（yuzu/Ryujinx/任务管理器）内的键鼠输入，
+             并让 SendInput 合成输入送达这些窗口；但程序本身不是管理员、启动不弹 UAC、
+             由其启动的子进程为普通权限（消除 requireAdministrator 的副作用）。
+
+             【使用前提：只有在产物【已签名】时才应使用本清单】
+             本文件不被 csproj 默认引用。仅在产物【已签名】后用它产出安装版：
+               dotnet publish ... -p:UIAccessManifest=true
+             默认构建（app.manifest，uiAccess="false"）不需要任何证书，可直接运行。
+
+             【三项硬前提，缺一即被系统忽略、退回普通权限，表现为管理员窗口内无法唤起】
+               1) 可执行文件必须数字签名，证书链连到本机「受信任的根证书颁发机构」；
+               2) 必须安装到安全位置（%ProgramFiles% / Program Files (x86) / System32）；
+               3) 发布者证书需在「受信任的发布者」存储中。
+             注意：Windows 对 UIAccess 的要求是「签名 + 被系统信任」，【不要求 OV/EV 证书等级】——
+             任何由公开 CA 签发且链到受信任根的代码签名证书均满足。开源项目可走免费渠道
+             （SignPath Foundation 开源计划 / Certum 开源证书），详见 docs/Certum开源证书申请清单.md。
+             本机自签验证：scripts\setup-signing.ps1 生成自签名证书并导入上述两个存储，
+             再用 scripts\pack-selfsigned.ps1 打包（安装阶段由 certutil 自动导入信任存储）。
+
+             【与开机自启的耦合，改本行前必读】
+             UIAccess 程序只能由「中完整性」进程启动。Task Scheduler 服务自身以
+             LocalSystem（高完整性）运行，schtasks 的 /RL LIMITED 仅降权【目标进程】、
+             并不改变 Task Scheduler 作为父进程的身份，故计划任务启动本程序必返回
+             740(ERROR_ELEVATION_REQUIRED) 而静默失败（实测 LastTaskResult 0x800702E4）。
+             因此开机自启必须用注册表 HKCU Run 项（由 explorer.exe 中完整性启动），
+             见 Services\StartupService.cs。uiAccess 与自启方式必须配套修改。 -->
+        <requestedExecutionLevel level="asInvoker" uiAccess="true" />
+      </requestedPrivileges>
+    </security>
+  </trustInfo>
+  <compatibility xmlns="urn:schemas-microsoft-com:compatibility.v1">
+    <application>
+      <!-- Windows 10 / 11 -->
+      <supportedOS Id="{8e0f7a12-bfb3-4fe8-b9a5-48fd50a15a9a}" />
+    </application>
+  </compatibility>
+  <application xmlns="urn:schemas-microsoft-com:asm.v3">
+    <windowsSettings>
+      <dpiAware xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">true/pm</dpiAware>
+      <dpiAwareness xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">PerMonitorV2</dpiAwareness>
+    </windowsSettings>
+  </application>
+</assembly>

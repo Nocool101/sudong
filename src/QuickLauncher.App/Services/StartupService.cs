@@ -5,71 +5,105 @@ using Microsoft.Win32;
 namespace QuickLauncher.App.Services;
 
 /// <summary>
-/// 开机自启：Windows 计划任务（登录时·普通权限 LIMITED）静默启动，替代旧的注册表 Run 项。
-/// 权限模型已由 requireAdministrator 改为 asInvoker + UIAccess（见 app.manifest）：
-/// 程序以「中完整性 + UIAccess 特权」运行即可操作管理员窗口的 UI，无需最高权限，
-/// 因此计划任务也用 /RL LIMITED（登录时以普通权限启动，不弹 UAC、不静默提权）。
+/// 开机自启：注册表 HKCU Run 项，由 explorer.exe 以「中完整性」启动。
+///
+/// 为什么不用计划任务（重要，勿改回）：
+/// 本程序 manifest 为 asInvoker + UIAccess(uiAccess=true)，而 Windows 只允许
+/// 「中完整性」进程启动 UIAccess 程序。Task Scheduler 服务自身以 LocalSystem
+/// （高完整性）运行，schtasks 的 /RL LIMITED 仅降权【目标进程】、并不改变
+/// Task Scheduler 作为父进程的身份，因此由它启动本程序会被系统拒绝并返回
+/// 740(ERROR_ELEVATION_REQUIRED)，表现为"计划任务明明就绪却静默不启动"。
+/// 实测：Start-ScheduledTask 触发 → LastTaskResult 0x800702E4，进程未创建。
+///
+/// HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run 由 explorer.exe（中完整性
+/// 桌面外壳）在用户登录后启动，符合 UIAccess 启动模型，这也是 Quicker 等同类
+/// UIAccess 软件的自启方式。
 /// </summary>
 public static class StartupService
 {
-    public const string TaskName = "QuickLauncher";
-    private const string RunValueName = "QuickLauncher";
+    /// <summary>Run 项值名（同时用于旧版计划任务名的清理标识）。</summary>
+    public const string RunValueName = "QuickLauncher";
+
+    private const string RunKeyPath = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
 
     private static string ExePath =>
         Environment.ProcessPath ?? Process.GetCurrentProcess().MainModule?.FileName ?? "";
 
-    /// <summary>设置/取消开机自启（计划任务·登录时·最高权限），并清理旧的注册表 Run 项。</summary>
+    /// <summary>设置/取消开机自启（注册表 Run 项），并一次性清理旧版计划任务。</summary>
     public static (bool ok, string message) Apply(bool enable)
     {
-        // 无论启停都清理一次旧的 Run 项（一次性迁移，防止两处并存）
-        RemoveLegacyRunKey();
+        // 无论启停都清理一次旧版 schtasks 计划任务（Run 项与计划任务不可并存，
+        // 否则两处都会尝试启动，靠单实例互斥量兜底但会互相唤醒/退出，行为混乱）。
+        RemoveLegacyTask();
 
-        if (!enable) return DeleteTask();
-        // 直接以 /Create /F 覆盖创建，确保 /RL 运行级别为 LIMITED，
-        // 可把第 1 步遗留的 HIGHEST 旧任务一次性纠正为「普通权限 + UIAccess」。
-        return CreateTask();
+        if (!enable) return DeleteRunKey();
+        return SetRunKey();
     }
 
-    /// <summary>当前是否已配置开机自启（计划任务存在）。</summary>
+    /// <summary>当前是否已配置开机自启（Run 项存在）。</summary>
     public static bool IsEnabled()
     {
-        var (code, _) = Run("schtasks", $"/Query /TN \"{TaskName}\"");
-        return code == 0;
+        try
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(RunKeyPath, writable: false);
+            var value = key?.GetValue(RunValueName) as string;
+            return !string.IsNullOrEmpty(value);
+        }
+        catch
+        {
+            return false;
+        }
     }
 
-    private static (bool ok, string message) CreateTask()
+    private static (bool ok, string message) SetRunKey()
     {
         var exe = ExePath;
         if (string.IsNullOrEmpty(exe)) return (false, "无法定位程序路径");
 
-        // /SC ONLOGON 登录时触发；/RL LIMITED 普通权限（配合 UIAccess 操作管理员窗口 UI，无需最高权限）；/F 覆盖同名任务。
-        // /TR 的路径含空格，用引号包裹。ExePath 取 Environment.ProcessPath：部署到 Program Files 后自动指向安装路径。
-        var args = $"/Create /TN \"{TaskName}\" /TR \"\\\"{exe}\\\"\" /SC ONLOGON /RL LIMITED /F";
-        var (code, output) = Run("schtasks", args);
-        return code == 0
-            ? (true, "已开启开机自启（计划任务·登录时·普通权限 LIMITED，配合 UIAccess）")
-            : (false, $"创建计划任务失败：{output.Trim()}");
+        try
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(RunKeyPath, writable: true)
+                             ?? Registry.CurrentUser.CreateSubKey(RunKeyPath);
+            if (key is null) return (false, "无法打开开机自启注册表项");
+
+            // 路径含空格（Program Files），必须整体加引号，否则 explorer 启动时会在第一个空格处截断。
+            key.SetValue(RunValueName, $"\"{exe}\"", RegistryValueKind.String);
+            return (true, "已开启开机自启（登录时由资源管理器启动，配合 UIAccess 可操作管理员窗口）");
+        }
+        catch (Exception ex)
+        {
+            return (false, $"开启开机自启失败：{ex.Message}");
+        }
     }
 
-    private static (bool ok, string message) DeleteTask()
-    {
-        Run("schtasks", $"/Delete /TN \"{TaskName}\" /F");
-        // 任务不存在时 schtasks 也返回非 0，统一视为“已关闭”
-        return (true, "已关闭开机自启");
-    }
-
-    /// <summary>删除旧版写入的注册表 Run 项（迁移清理）。</summary>
-    private static void RemoveLegacyRunKey()
+    private static (bool ok, string message) DeleteRunKey()
     {
         try
         {
-            using var key = Registry.CurrentUser.OpenSubKey(
-                @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", writable: true);
+            using var key = Registry.CurrentUser.OpenSubKey(RunKeyPath, writable: true);
             key?.DeleteValue(RunValueName, throwOnMissingValue: false);
+            return (true, "已关闭开机自启");
         }
-        catch
+        catch (Exception ex)
         {
-            // 忽略注册表访问失败
+            return (false, $"关闭开机自启失败：{ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// 删除旧版用 schtasks 创建的计划任务（一次性迁移）。
+    /// 旧任务留着不会生效（UIAccess + 计划任务必然 740），但会在任务计划程序里
+    /// 留下一条永远失败的历史记录，故显式清掉。
+    /// </summary>
+    private static void RemoveLegacyTask()
+    {
+        try
+        {
+            Run("schtasks", $"/Delete /TN \"{RunValueName}\" /F");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Legacy task cleanup failed: {ex.Message}");
         }
     }
 
