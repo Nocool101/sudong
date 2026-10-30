@@ -107,7 +107,8 @@ public sealed class StepExecutor
             // If/Else 配对处理
             if (step.StepType.Equals("If", StringComparison.OrdinalIgnoreCase))
             {
-                var condText = ctx.Interpolate(step.Inputs.GetValueOrDefault("condition"));
+                // 条件直接交给表达式求值器（原生支持 {变量}），不要预先插值
+                var condText = step.Inputs.GetValueOrDefault("condition") ?? "";
                 var ok = ctx.EvaluateBool(condText);
                 log.Add($"[如果] {condText} => {ok}");
                 if (ok)
@@ -166,9 +167,10 @@ public sealed class StepExecutor
 
     private static bool EvaluateCondition(string expr, StepContext ctx)
     {
-        var text = ctx.Interpolate(expr);
-        if (bool.TryParse(text, out var b)) return b;
-        return ExpressionEvaluator.TryEvaluate(text, out var r) && r;
+        // 纯字面量 true/false 直接判定；其余交给表达式求值器（它能解析 {变量} 与裸标识符）。
+        // 注意：不要预先 Interpolate——那会把 {变量} 变成裸文本，字符串比较恒失败。
+        if (bool.TryParse(expr.Trim(), out var b)) return b;
+        return ctx.EvaluateBool(expr);
     }
 
     /// <summary>

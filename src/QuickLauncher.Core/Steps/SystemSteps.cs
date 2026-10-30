@@ -112,20 +112,28 @@ public static class SystemSteps
             {
                 var fileName = shell == "powershell" ? "powershell.exe" : "cmd.exe";
                 var args = shell == "powershell" ? $"-NoProfile -Command \"{command}\"" : $"/c \"{command}\"";
+                var wantOutput = !admin && !string.IsNullOrEmpty(outputVar);
+
                 var psi = new ProcessStartInfo(fileName, args)
                 {
-                    UseShellExecute = true,
-                    RedirectStandardOutput = !admin && !string.IsNullOrEmpty(outputVar),
+                    // 【关键】UseShellExecute 与重定向输出互斥，两者同时为 true 时
+                    // Process.Start 抛 InvalidOperationException（「带 outputVar 的 RunCmd 必崩」）。
+                    //   管理员运行需要 ShellExecute + Verb="runas"（此时不捕获输出）；
+                    //   需要捕获输出时必须 UseShellExecute=false。
+                    UseShellExecute = admin,
+                    RedirectStandardOutput = wantOutput,
                     CreateNoWindow = !admin
                 };
                 if (admin) psi.Verb = "runas";
 
                 using var p = Process.Start(psi);
                 if (p is null) return StepResult.Fail("启动失败");
-                if (!admin && !string.IsNullOrEmpty(outputVar))
+                if (wantOutput)
                 {
-                    var output = p.StandardOutput.ReadToEnd();
+                    // 异步读，避免「先读 stdout 再 WaitForExit」在输出量大时管道死锁
+                    var stdoutTask = p.StandardOutput.ReadToEndAsync();
                     p.WaitForExit();
+                    var output = stdoutTask.GetAwaiter().GetResult();
                     ctx.Set(outputVar, output);
                 }
                 return StepResult.Ok();

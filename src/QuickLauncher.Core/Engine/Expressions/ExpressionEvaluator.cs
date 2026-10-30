@@ -211,6 +211,29 @@ public static class ExpressionEvaluator
                 while (_pos < _s.Length && (char.IsDigit(_s[_pos]) || _s[_pos] == '.')) _pos++;
                 return double.Parse(_s.AsSpan(start, _pos - start), NumberStyles.Float, CultureInfo.InvariantCulture);
             }
+            if (c == '{')
+            {
+                // {变量名} / {变量名:格式} —— 变量【引用】而非文本替换。
+                // 关键：不能先把 {x} 替换成变量值再做语法分析——字符串变量会变成
+                // 无引号的裸标识符（如 已完成 == "已完成"），解析器当它是变量名去找，
+                // 找不到就抛「未知标识符」，条件恒为假。原生解析才能正确做字符串比较。
+                var end = _s.IndexOf('}', _pos);
+                if (end < 0) throw new FormatException("变量引用缺少 }");
+                var inner = _s.Substring(_pos + 1, end - _pos - 1).Trim();
+                _pos = end + 1;
+
+                var colon = inner.IndexOf(':');
+                var name = (colon >= 0 ? inner[..colon] : inner).Trim();
+                var format = colon >= 0 ? inner[(colon + 1)..].Trim() : null;
+                if (name.Length == 0) throw new FormatException("变量引用为空");
+                if (VariableResolver is null) throw new FormatException($"表达式不支持变量引用: {{{name}}}");
+
+                var v = VariableResolver(name);
+                if (v is null) throw new FormatException($"未知变量: {name}");
+                if (format is not null && v is IFormattable f)
+                    return f.ToString(format, CultureInfo.InvariantCulture);
+                return v;
+            }
             if (char.IsLetter(c) || c == '_')
             {
                 var start = _pos;

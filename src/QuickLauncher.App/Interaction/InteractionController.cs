@@ -87,7 +87,8 @@ public sealed class InteractionController : IDisposable
     /// <summary>进入抑制区（执行动作期间调用，防止自触发）</summary>
     public IDisposable Suppress()
     {
-        _suppressDepth++;
+        // 抑制计数在后台线程递增、在 UI 线程（钩子回调）读取 —— 用 Interlocked 保证原子性与可见性
+        System.Threading.Interlocked.Increment(ref _suppressDepth);
         return new Suppressor(this);
     }
 
@@ -95,11 +96,11 @@ public sealed class InteractionController : IDisposable
     {
         private readonly InteractionController _owner;
         public Suppressor(InteractionController owner) => _owner = owner;
-        public void Dispose() => _owner._suppressDepth--;
+        public void Dispose() => System.Threading.Interlocked.Decrement(ref _owner._suppressDepth);
     }
 
-    private bool ShouldIgnore(GlobalHooks.MouseEventData e) => _suppressDepth > 0 || App.IsModalDialogOpen || (IgnoreInjected && e.Injected);
-    private bool ShouldIgnore(GlobalHooks.KeyEventData e) => _suppressDepth > 0 || App.IsModalDialogOpen || (IgnoreInjected && e.Injected);
+    private bool ShouldIgnore(GlobalHooks.MouseEventData e) => System.Threading.Volatile.Read(ref _suppressDepth) > 0 || App.IsModalDialogOpen || (IgnoreInjected && e.Injected);
+    private bool ShouldIgnore(GlobalHooks.KeyEventData e) => System.Threading.Volatile.Read(ref _suppressDepth) > 0 || App.IsModalDialogOpen || (IgnoreInjected && e.Injected);
 
     public InteractionController(
         GlobalHooks hooks,
@@ -309,9 +310,13 @@ public sealed class InteractionController : IDisposable
     public void RunAction(ActionItem action)
     {
         _store.RecordActionRun(action.Id);
-        using var _ = Suppress();
         System.Threading.Tasks.Task.Run(() =>
         {
+            // 抑制区必须覆盖【整个执行期】：动作会合成键鼠输入，若抑制在 RunAction 返回时
+            // 就被释放，自身低层钩子会捕获这些合成输入 → 回环触发面板/文本指令。
+            // 因此 using 必须写在 Task.Run 内部，作用域才是真正的执行期。
+            using var _ = Suppress();
+
             var result = _executor.Execute(action);
             if (!result.Success)
             {

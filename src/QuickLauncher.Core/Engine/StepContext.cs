@@ -59,6 +59,12 @@ public sealed class StepContext
     private readonly Storage.ActionStore _store;
     private readonly IServiceProvider _services;
 
+    /// <summary>
+    /// 持久变量的存储键前缀（与 Quicker 的 state 文件约定一致）。
+    /// 存储层用带前缀的键，运行时变量名【不带】前缀。
+    /// </summary>
+    public const string PersistentPrefix = "$var:";
+
     /// <summary>动作输入参数（子程序/文本指令传入）</summary>
     public Dictionary<string, string> InputParameters { get; } = new(StringComparer.OrdinalIgnoreCase);
 
@@ -81,9 +87,15 @@ public sealed class StepContext
         _store = store;
         _services = services;
         _persistent = store.LoadState(actionId);
-        // 持久变量加载到运行时
+        // 持久变量加载到运行时：state 文件的键带 "$var:" 前缀，但运行时变量名【不带】前缀。
+        // 否则 {counter} 插值、ctx.Get("counter")、脚本读取统统取不到——变量变成只写不读。
         foreach (var kv in _persistent)
-            _vars[kv.Key] = kv.Value;
+        {
+            var name = kv.Key.StartsWith(PersistentPrefix, StringComparison.Ordinal)
+                ? kv.Key[PersistentPrefix.Length..]
+                : kv.Key;
+            _vars[name] = kv.Value;
+        }
     }
 
     public Guid ActionId => _actionId;
@@ -167,7 +179,7 @@ public sealed class StepContext
     public void Persist(string name)
     {
         if (_vars.TryGetValue(name, out var v))
-            _persistent["$var:" + name] = v?.ToString() ?? "";
+            _persistent[PersistentPrefix + name] = v?.ToString() ?? "";
     }
 
     /// <summary>动作结束时调用：把持久化变量写回 state 文件</summary>
@@ -177,7 +189,7 @@ public sealed class StepContext
         var toSave = new Dictionary<string, string>();
         foreach (var kv in _persistent)
         {
-            if (kv.Key.StartsWith("$var:"))
+            if (kv.Key.StartsWith(PersistentPrefix, StringComparison.Ordinal))
                 toSave[kv.Key] = kv.Value;
         }
         _store.SaveState(_actionId, toSave);
@@ -187,14 +199,18 @@ public sealed class StepContext
 
     #region 表达式
 
-    /// <summary>用当前变量求值表达式</summary>
+    /// <summary>
+    /// 用当前变量求值表达式。
+    /// 【不要预先做文本插值】——ExpressionEvaluator 已原生支持 {变量} 引用与裸标识符；
+    /// 若先插值，字符串变量会退化成裸标识符（如 已完成 == "已完成"），解析失败、条件恒为假。
+    /// </summary>
     public object? Evaluate(string expr)
-        => ExpressionEvaluator.Eval(Interpolate(expr), name =>
+        => ExpressionEvaluator.Eval(expr, name =>
             _vars.TryGetValue(name, out var v) ? v : null);
 
     /// <summary>求值布尔表达式</summary>
     public bool EvaluateBool(string expr)
-        => ExpressionEvaluator.TryEvaluate(Interpolate(expr), name =>
+        => ExpressionEvaluator.TryEvaluate(expr, name =>
             _vars.TryGetValue(name, out var v) ? v : null, out var r) && r;
 
     #endregion
