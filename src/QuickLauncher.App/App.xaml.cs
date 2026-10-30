@@ -38,8 +38,15 @@ public partial class App : Application
 
     public static ActionStore? Store { get; private set; }
     public static StepExecutor? Executor { get; private set; }
-    public static AppSettings Settings => ((App)Current)._settings;
-    public static GlobalHooks? Hooks => ((App)Current)._hooks;
+
+    /// <summary>
+    /// 全局设置。Application.Current 不存在时（无 UI 环境：单元测试、命令行 --run 模式、
+    /// 应用关闭期钩子仍在回调）回退到默认实例，避免 ((App)Current) 空引用。
+    /// </summary>
+    public static AppSettings Settings => Current is App app ? app._settings : FallbackSettings;
+
+    private static readonly AppSettings FallbackSettings = new();
+    public static GlobalHooks? Hooks => Current is App app ? app._hooks : null;
     public static string DataDir { get; private set; } = "";
 
     protected override void OnStartup(StartupEventArgs e)
@@ -131,8 +138,10 @@ public partial class App : Application
         if (settingsJson is not null)
             _settings = Json.Deserialize<AppSettings>(settingsJson) ?? new AppSettings();
 
-        // 开机自启迁移：旧版用注册表 Run 项，现改为“计划任务·登录时·普通权限(LIMITED)”。
-        // 权限模型为 asInvoker + UIAccess（见 app.manifest），无需最高权限即可操作管理员窗口 UI。
+        // 开机自启迁移：旧版用 schtasks 计划任务——但 UIAccess 程序只能由「中完整性」进程启动，
+        // 而 Task Scheduler 服务自身是 LocalSystem（高完整性），/RL LIMITED 只降权目标进程、不改父进程身份，
+        // 故计划任务启动本程序必返回 740(ERROR_ELEVATION_REQUIRED) 而静默失败。
+        // 现改为注册表 HKCU Run 项，由 explorer.exe（中完整性）启动，详见 Services/StartupService.cs。
         try { if (_settings.General.RunAtStartup) Services.StartupService.Apply(true); }
         catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Startup migrate failed: {ex.Message}"); }
 

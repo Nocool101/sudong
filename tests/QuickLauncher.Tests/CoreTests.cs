@@ -562,48 +562,35 @@ public class IconExtractorTests
 
 public class WindowXamlLoadTests
 {
-    /// <summary>在 STA 线程中构造窗口，验证 XAML/BAML 可正常加载（颜色值等错误仅在运行期暴露）</summary>
-    private static Exception? ConstructInSta(Func<System.Windows.Window> factory)
+    /// <summary>
+    /// 在 WPF 测试宿主（唯一 STA 线程 + 已加载 App.xaml 资源的 Application）上构造窗口，
+    /// 验证 XAML/BAML 可正常加载（颜色值等错误仅在运行期暴露）。
+    ///
+    /// 关键点：宿主必须持有 Application 实例。Application.Current 为 null 时
+    /// StaticResourceExtension 找不到 "Brush.BgBase"，会抛 XamlParseException。
+    /// </summary>
+    private static void ConstructOnHost(Action factory)
     {
-        Exception? error = null;
-        var t = new System.Threading.Thread(() =>
-        {
-            try
-            {
-                var w = factory();
-                if (w is null) error = new InvalidOperationException("窗口为 null");
-            }
-            catch (Exception ex)
-            {
-                error = ex;
-            }
-        });
-        t.SetApartmentState(System.Threading.ApartmentState.STA);
-        t.Start();
-        t.Join(TimeSpan.FromSeconds(10));
-        return error;
+        WpfTestHost.Run(() => { factory(); });
     }
 
     [Fact]
     public void AddActionDialog_XamlLoads()
     {
-        var error = ConstructInSta(() => new QuickLauncher.App.Views.AddActionDialog());
-        Assert.Null(error);
+        ConstructOnHost(() => { _ = new QuickLauncher.App.Views.AddActionDialog(); });
     }
 
     [Fact]
     public void IconPickerDialog_XamlLoads()
     {
-        var error = ConstructInSta(() => new QuickLauncher.App.Views.IconPickerDialog("▶"));
-        Assert.Null(error);
+        ConstructOnHost(() => { _ = new QuickLauncher.App.Views.IconPickerDialog("▶"); });
     }
 
     [Fact]
     public void ActionEditorWindow_XamlLoads()
     {
-        var error = ConstructInSta(() => new QuickLauncher.App.Views.ActionEditorWindow(
-            new ActionItem { Name = "测试", Kind = ActionKind.Simple, SimpleType = "RunProgram" }));
-        Assert.Null(error);
+        ConstructOnHost(() => { _ = new QuickLauncher.App.Views.ActionEditorWindow(
+            new ActionItem { Name = "测试", Kind = ActionKind.Simple, SimpleType = "RunProgram" }); });
     }
 }
 
@@ -613,34 +600,25 @@ public class ReproTests
     [Fact]
     public void ExtractIconButton_FullChain()
     {
-        Exception? error = null;
         string? iconResult = null;
-        var t = new System.Threading.Thread(() =>
+        WpfTestHost.Run(() =>
         {
-            try
+            var action = new ActionItem
             {
-                var action = new ActionItem
-                {
-                    Name = "启动软件",
-                    Kind = ActionKind.Simple,
-                    SimpleType = "RunProgram",
-                    SimpleInputs = { ["program"] = Path.Combine(
-                        Environment.GetFolderPath(Environment.SpecialFolder.System), "notepad.exe") }
-                };
-                var w = new QuickLauncher.App.Views.ActionEditorWindow(action);
-                var mi = typeof(QuickLauncher.App.Views.ActionEditorWindow)
-                    .GetMethod("ExtractIconButton_Click", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                Assert.NotNull(mi);
-                mi!.Invoke(w, new object?[] { null, null });
-                var iconBox = (System.Windows.Controls.TextBox)w.FindName("IconBox")!;
-                iconResult = iconBox.Text;
-            }
-            catch (Exception ex) { error = ex is System.Reflection.TargetInvocationException tie ? tie.InnerException! : ex; }
+                Name = "启动软件",
+                Kind = ActionKind.Simple,
+                SimpleType = "RunProgram",
+                SimpleInputs = { ["program"] = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.System), "notepad.exe") }
+            };
+            var w = new QuickLauncher.App.Views.ActionEditorWindow(action);
+            var mi = typeof(QuickLauncher.App.Views.ActionEditorWindow)
+                .GetMethod("ExtractIconButton_Click", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            Assert.NotNull(mi);
+            mi!.Invoke(w, new object?[] { null, null });
+            var iconBox = (System.Windows.Controls.TextBox)w.FindName("IconBox")!;
+            iconResult = iconBox.Text;
         });
-        t.SetApartmentState(System.Threading.ApartmentState.STA);
-        t.Start();
-        t.Join(TimeSpan.FromSeconds(15));
-        Assert.Null(error);
         Assert.False(string.IsNullOrEmpty(iconResult));
         Assert.True(File.Exists(iconResult!), $"图标文件应存在: {iconResult}");
     }
@@ -800,32 +778,23 @@ public class AutoNameTests
     [Fact]
     public void AutoName_FromProgramPath()
     {
-        Exception? error = null;
         string? name = null;
-        var t = new System.Threading.Thread(() =>
+        WpfTestHost.Run(() =>
         {
-            try
+            var action = new ActionItem
             {
-                var action = new ActionItem
-                {
-                    Name = "启动软件",
-                    Kind = ActionKind.Simple,
-                    SimpleType = "RunProgram",
-                    SimpleInputs = { ["program"] = Path.Combine(
-                        Environment.GetFolderPath(Environment.SpecialFolder.System), "notepad.exe") }
-                };
-                var w = new QuickLauncher.App.Views.ActionEditorWindow(action);
-                typeof(QuickLauncher.App.Views.ActionEditorWindow)
-                    .GetMethod("SimpleParamEditor_Changed", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
-                    .Invoke(w, null);
-                name = ((System.Windows.Controls.TextBox)w.FindName("NameBox")!).Text;
-            }
-            catch (Exception ex) { error = ex is System.Reflection.TargetInvocationException tie ? tie.InnerException! : ex; }
+                Name = "启动软件",
+                Kind = ActionKind.Simple,
+                SimpleType = "RunProgram",
+                SimpleInputs = { ["program"] = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.System), "notepad.exe") }
+            };
+            var w = new QuickLauncher.App.Views.ActionEditorWindow(action);
+            typeof(QuickLauncher.App.Views.ActionEditorWindow)
+                .GetMethod("SimpleParamEditor_Changed", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+                .Invoke(w, null);
+            name = ((System.Windows.Controls.TextBox)w.FindName("NameBox")!).Text;
         });
-        t.SetApartmentState(System.Threading.ApartmentState.STA);
-        t.Start();
-        t.Join(TimeSpan.FromSeconds(15));
-        Assert.Null(error);
         Assert.False(string.IsNullOrWhiteSpace(name), "名称应被自动识别");
         Assert.NotEqual("启动软件", name);
     }

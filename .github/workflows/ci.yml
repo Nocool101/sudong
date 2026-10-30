@@ -23,7 +23,7 @@ jobs:
       - name: Build (Release)
         run: dotnet build --configuration Release --no-restore
 
-      - name: Test (稳定单元测试)
-        # 排除需 UI/Application 或无头环境不稳定的测试：
-        # WindowXamlLoadTests / ReproTests / AutoNameTests
-        run: dotnet test --configuration Release --no-build --filter "FullyQualifiedName!~WindowXamlLoadTests&FullyQualifiedName!~ReproTests&FullyQualifiedName!~AutoNameTests"
+      - name: Test (单元测试)
+        # WPF 窗口类测试由 tests/WpfTestHost.cs 提供唯一 STA 线程 + 已加载 App.xaml 资源的
+        # Application 实例，可在无头 CI 中稳定运行，因此不再排除任何测试类。
+        run: dotnet test --configuration Release --no-build
