@@ -54,7 +54,7 @@
 - SQLite 存储（动作/场景/页面/指令/热键规则/使用统计）
 - 每动作 state JSON（`%LOCALAPPDATA%\QuickLauncher\states\state_<ActionId>.json`）
 - 管理窗口：动作管理（列表/编辑器/步骤编排、导入/导出 JSON）、场景管理、指令管理、扩展热键、设置
-- 托盘常驻、开机自启（计划任务·登录时·普通权限）、挂起/恢复
+- 托盘常驻、开机自启（注册表 Run 项·登录时由资源管理器启动）、挂起/恢复
 - 命令行：`QuickLauncher.App.exe --run <动作Id>` 直接执行动作
 
 ## 快速开始
@@ -63,7 +63,7 @@
 # 构建
 dotnet build
 
-# 运行测试（14 个单元测试）
+# 运行测试（63 个单元测试）
 dotnet test
 
 # 启动应用
@@ -84,9 +84,20 @@ dotnet run --project src/QuickLauncher.App
 2. **安装在 `C:\Program Files\`** 等安全位置；
 3. 证书链连到本机“受信任的根证书颁发机构”。
 
-因此开源版默认关闭 UIAccess。需要时：用正式证书签名跑 `scripts\sign-and-pack.ps1`；本机自签验证跑 `scripts\setup-signing.ps1` + `scripts\deploy.ps1`（均需管理员 PowerShell），再把 `app.manifest` 的 `uiAccess` 改为 `true`。
+因此开源版默认关闭 UIAccess —— `app.manifest` 即为 `uiAccess="false"`，任何人 clone 后都能直接构建运行，不需签名。需要时：用正式证书签名跑 `scripts\sign-and-pack.ps1`；本机自签验证跑 `scripts\setup-signing.ps1` + `scripts\deploy.ps1`（均需管理员 PowerShell）。
 
-> 开机自启由 `Services/StartupService.cs` 以「计划任务·登录时·普通权限(LIMITED)」管理；运行期数据写在 `%LOCALAPPDATA%\QuickLauncher`（普通权限可写，与安装位置解耦）。
+UIAccess 版本单独放在 `app.uiaccess.manifest`（`uiAccess="true"`），**不修改 `app.manifest`**。签名成功后用指定清单产出 UIAccess 版本：
+
+```powershell
+dotnet publish src/QuickLauncher.App -c Release -r win-x64 --self-contained true `
+  -p:PublishSingleFile=true -p:UIAccessManifest=true
+```
+
+> 用 `-p:UIAccessManifest=true` 切换清单，**不要**用 `-p:ApplicationManifest=...`——后者是全局属性，会作用到 `QuickLauncher.Core` 并导致编译失败（CS1926）。
+
+> Windows 对 UIAccess 的要求是「已签名 + 被系统信任 + 安装在 Program Files」，**不要求 OV/EV 证书等级**；开源项目可走免费公开渠道（SignPath Foundation 开源计划 / Certum 开源证书），见 [`docs/Certum开源证书申请清单.md`](docs/Certum开源证书申请清单.md)。
+
+> 开机自启由 `Services/StartupService.cs` 以「注册表 HKCU Run 项」管理。原因：**UIAccess 版本**为 `asInvoker + uiAccess="true"`，而 Windows 只允许中完整性进程启动 UIAccess 程序——Task Scheduler 服务自身是 LocalSystem（高完整性），`/RL LIMITED` 只降权目标进程、不改父进程身份，故计划任务启动必返回 740 而静默失败；`HKCU\...\Run` 由 explorer.exe（中完整性）启动才可靠。运行期数据写在 `%LOCALAPPDATA%\QuickLauncher`（普通权限可写，与安装位置解耦）。
 
 ## 安全与隐私
 - **完全本地运行**：无遥测、无统计上报、无任何网络请求（唯一联网行为是「联网搜索」动作交给本地默认浏览器打开）。所有数据仅存本机 `%LOCALAPPDATA%\QuickLauncher`，**不上传任何服务器**。
@@ -126,7 +137,7 @@ QuickLauncher/
 │       ├── Scenes/SceneMatcher.cs   # 场景匹配
 │       ├── Services/PanelService.cs # 面板窗口管理
 │       └── Views/                   # 面板、编辑器、设置等窗口
-└── tests/QuickLauncher.Tests/       # xunit 测试（14 个）
+└── tests/QuickLauncher.Tests/       # xunit 测试（63 个）
 ```
 
 ## 架构要点
