@@ -82,15 +82,22 @@ public sealed class HotkeyLeaderWatcher : IDisposable
     /// 校验修饰键组合是否与指令配置一致（如 Ctrl+Shift+CapsLock → P）。
     /// Modifiers 为空表示不要求修饰键；配置里的每个修饰键都必须按住，未配置的必须松开。
     /// </summary>
-    private static bool ModifiersMatch(string? modifiers)
+    private static bool ModifiersMatch(string? modifiers) => MatchModifiers(modifiers, IsDown);
+
+    /// <summary>
+    /// 同上，但「某个键是否按下」由调用方提供。
+    /// 【为什么要拆开】直接读 GetAsyncKeyState 会让单元测试依赖「用户此刻有没有按着 Ctrl」，
+    /// 在真实桌面上随机失败（CI 上同样偶发红）。注入确定状态即可稳定断言。
+    /// </summary>
+    internal static bool MatchModifiers(string? modifiers, Func<int, bool> isDown)
     {
         var expected = (modifiers ?? "").ToLowerInvariant();
         bool Need(string name) => expected.Split('+', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Contains(name);
-        return IsDown(0x11) == Need("ctrl")
-            && IsDown(0x12) == Need("alt")
-            && IsDown(0x10) == Need("shift")
-            && (IsDown(0x5B) || IsDown(0x5C)) == Need("win");
+        return isDown(0x11) == Need("ctrl")
+            && isDown(0x12) == Need("alt")
+            && isDown(0x10) == Need("shift")
+            && (isDown(0x5B) || isDown(0x5C)) == Need("win");
     }
 
     private void OnKeyDown(GlobalHooks.KeyEventData e)

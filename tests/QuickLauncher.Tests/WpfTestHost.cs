@@ -62,7 +62,20 @@ public static class WpfTestHost
                 // 才会加载 App.xaml 的 Application.Resources —— 这正是 Brush.* 等静态资源的来源。
                 // 注意 InitializeComponent 由生成的 App.g.cs 以 public 方法形式提供，
                 // 不在构造函数里（Main() 里显式调用），故这里必须手动调一次。
+                // 【必须】App 的 InitializeComponent() 会触发 OnStartup —— 而 OnStartup
+                // 会装全局钩子、建托盘、弹主窗口、写注册表（污染真实环境），且当机器上
+                // 已有实例时还会命中单实例逻辑并 Shutdown()，导致后续 XAML 加载全部抛
+                // 「应用程序对象正在关闭。」。
+                // 所以置 ResourceOnlyMode：只加载 App.xaml 的资源字典，不启动应用。
+                global::QuickLauncher.App.App.ResourceOnlyMode = true;
+
                 var app = new global::QuickLauncher.App.App();
+
+                // 必须是 OnExplicitShutdown：默认的 OnLastWindowClose 会在窗口生命周期
+                // 变化时触发 Application.Shutdown()，此后任何 XAML 资源加载都会抛
+                // 「应用程序对象正在关闭。」——测试里窗口只构造不显示，必须关掉自动关闭。
+                app.ShutdownMode = System.Windows.ShutdownMode.OnExplicitShutdown;
+
                 app.InitializeComponent();
 
                 ready.Set();

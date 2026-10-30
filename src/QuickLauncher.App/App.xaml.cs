@@ -49,9 +49,26 @@ public partial class App : Application
     public static GlobalHooks? Hooks => Current is App app ? app._hooks : null;
     public static string DataDir { get; private set; } = "";
 
+    /// <summary>
+    /// 「仅资源」模式：只加载 App.xaml 的资源字典，不执行真正的启动流程
+    /// （不装全局钩子、不建托盘、不弹主窗口、不开数据库、不写注册表）。
+    ///
+    /// 【为什么需要】WPF 的 ApplicationDefinition 在 InitializeComponent() → LoadComponent()
+    /// 时就会触发 OnStartup。若单元测试直接 new App()，等于把整个应用真启动一遍：
+    /// 会装全局键鼠钩子、改写 HKCU Run 项、弹出主窗口；而且当机器上已有实例时
+    /// TryActivateRunningInstance() 会命中并调用 Shutdown()，此后任何 XAML 资源加载
+    /// 都会抛「应用程序对象正在关闭。」——测试既污染环境又不稳定。
+    ///
+    /// 用法：必须在 InitializeComponent() 之前置 true（OnStartup 由它触发）。
+    /// </summary>
+    public static bool ResourceOnlyMode { get; set; }
+
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+
+        // 仅资源模式：保留 XAML 资源字典，跳过全部启动副作用
+        if (ResourceOnlyMode) return;
 
         // 全局异常防护：未处理异常记录日志，避免直接闪退
         DispatcherUnhandledException += (_, args) =>

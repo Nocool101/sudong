@@ -669,11 +669,43 @@ public class HotkeyLogicTests
     [InlineData("alt", false)]
     public void ModifiersMatch_NoKeysPressed(string modifiers, bool expected)
     {
+        // 注入确定状态（全部未按下）。原先直接读 GetAsyncKeyState，
+        // 依赖「用户此刻有没有按着 Ctrl」→ 在真实桌面上随机失败，CI 亦然。
         var mi = typeof(QuickLauncher.App.Interaction.HotkeyLeaderWatcher)
-            .GetMethod("ModifiersMatch", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            .GetMethod("MatchModifiers", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
         Assert.NotNull(mi);
-        var result = (bool)mi!.Invoke(null, new object?[] { modifiers })!;
+        var result = (bool)mi!.Invoke(null, new object?[] { modifiers, (Func<int, bool>)(_ => false) })!;
         Assert.Equal(expected, result);
+    }
+
+    /// <summary>修饰键匹配：对应修饰键按住时应命中（原先这条分支完全没有测试覆盖）</summary>
+    [Theory]
+    [InlineData("ctrl", 0x11)]
+    [InlineData("alt", 0x12)]
+    [InlineData("shift", 0x10)]
+    [InlineData("win", 0x5B)]
+    public void ModifiersMatch_KeyPressed_Matches(string modifiers, int vk)
+    {
+        var mi = typeof(QuickLauncher.App.Interaction.HotkeyLeaderWatcher)
+            .GetMethod("MatchModifiers", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+        Assert.NotNull(mi);
+        var result = (bool)mi!.Invoke(null, new object?[] { modifiers, (Func<int, bool>)(k => k == vk) })!;
+        Assert.True(result, $"按住 {modifiers} 时应匹配");
+    }
+
+    /// <summary>修饰键匹配：组合要求两个键同时按住，只按一个不应命中</summary>
+    [Fact]
+    public void ModifiersMatch_Combination_RequiresAllKeys()
+    {
+        var mi = typeof(QuickLauncher.App.Interaction.HotkeyLeaderWatcher)
+            .GetMethod("MatchModifiers", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+        Assert.NotNull(mi);
+        // 只按住 Ctrl，但要求 Ctrl+Alt
+        var onlyCtrl = (bool)mi!.Invoke(null, new object?[] { "ctrl+alt", (Func<int, bool>)(k => k == 0x11) })!;
+        Assert.False(onlyCtrl);
+        // Ctrl+Alt 同时按住
+        var both = (bool)mi.Invoke(null, new object?[] { "ctrl+alt", (Func<int, bool>)(k => k is 0x11 or 0x12) })!;
+        Assert.True(both);
     }
 
     /// <summary>Quicker 按键语法 → 标准格式（录制快捷键用）</summary>
