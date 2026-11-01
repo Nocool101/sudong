@@ -31,7 +31,9 @@ jobs:
 
       - name: 便携版 zip
         shell: pwsh
-        run: Compress-Archive -Path dist/publish/* -DestinationPath "dist/速动-${{ github.ref_name }}-win-x64.zip" -Force
+        # 产物名必须用纯 ASCII：中文文件名在 action-gh-release 上传环节会被编码降级成 "-"
+        # （实测 v1.0.0 变成 "-Setup.exe" / "-v1.0.0-win-x64.zip"），用户下载到的文件名一眼像恶意文件。
+        run: Compress-Archive -Path dist/publish/* -DestinationPath "dist/Sudong-${{ github.ref_name }}-win-x64.zip" -Force
 
       - name: 安装 Inno Setup
         run: choco install innosetup -y --no-progress
@@ -41,11 +43,33 @@ jobs:
         continue-on-error: true
         run: '"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" scripts\sudong.iss'
 
+      - name: 生成 SHA256 校验值
+        shell: pwsh
+        # 每次发布自动生成，避免 README 里硬编码的哈希随重新打包而过期。
+        # 版本号用 $env:GITHUB_REF_NAME 而不是 ${{ github.ref_name }}：
+        # 后者会被 Actions 先替换成字面量，落在 PowerShell 里就成了 $(v1.0.1) 这样的
+        # 子表达式（会去尝试执行同名命令）。
+        run: |
+          $ver = $env:GITHUB_REF_NAME
+          $lines = Get-ChildItem dist -File |
+            Where-Object { $_.Extension -in '.zip', '.exe' } |
+            ForEach-Object { "{0}  {1}" -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower(), $_.Name }
+          $text = @(
+            "# 速动 $ver 产物 SHA256 校验",
+            "# 在 PowerShell 中校验：",
+            "#   Get-FileHash -Algorithm SHA256 <文件名>",
+            ""
+          ) + $lines
+          $text | Out-File -FilePath dist/SHA256SUMS.txt -Encoding utf8
+          Get-Content dist/SHA256SUMS.txt
+
       - name: 上传便携版 zip
         if: always()
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/速动-${{ github.ref_name }}-win-x64.zip
+          files: |
+            dist/Sudong-${{ github.ref_name }}-win-x64.zip
+            dist/SHA256SUMS.txt
           body_path: docs/CHANGELOG.md
           fail_on_unmatched_files: false
         env:
@@ -55,7 +79,7 @@ jobs:
         if: always()
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/速动-Setup.exe
+          files: dist/Sudong-Setup.exe
           fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

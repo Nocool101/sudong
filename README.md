@@ -103,6 +103,33 @@ dotnet publish src/QuickLauncher.App -c Release -r win-x64 --self-contained true
 
 > Windows 对 UIAccess 的要求是「已签名 + 被系统信任 + 安装在 Program Files」，**不要求 OV/EV 证书等级**；开源项目可走免费公开渠道（SignPath Foundation 开源计划 / Certum 开源证书），见 [`docs/Certum开源证书申请清单.md`](docs/Certum开源证书申请清单.md)。
 
+### ⚠️ 关于自签名证书的信任导入（本地自签名版安装包）
+
+`build\sudong.iss` 打出来的**本地自签名安装包**会在安装时把内置的自签名证书
+（`CN=QuickLauncher Dev`）导入到：
+
+- **受信任的根证书颁发机构**（`Cert:\LocalMachine\Root`）
+- **受信任的发布者**（`Cert:\LocalMachine\TrustedPublisher`）
+
+这是 UIAccess 的硬前提之一 —— 没有它，程序虽然能装能用，但**无法**在任务管理器、
+yuzu 等「以管理员身份运行的窗口」内唤出面板。
+
+**请知悉其含义**：导入受信任根证书后，**本机上由该证书签名的程序都会被系统信任**。
+该证书的私钥只保存在项目维护者的机器上（`.pfx` 已被 `.gitignore` 排除），
+但从用户的角度看，这是一次性的信任授予。
+
+- 安装界面的「附加任务」页会**明确列出该选项**，默认勾选，**可以取消** ——
+  取消后程序照常安装使用，只是失去管理员窗口支持。
+- 安装完成会弹窗告知已做了什么、如何撤销。
+- **撤销方式**：卸载本程序（会自动删除该证书），或手动删除：
+  ```powershell
+  Get-ChildItem Cert:\LocalMachine\Root, Cert:\LocalMachine\TrustedPublisher |
+    Where-Object { $_.Subject -match "QuickLauncher Dev" } | Remove-Item
+  ```
+
+> GitHub Release 上的**开源版安装包不导入任何证书**（无签名、`uiAccess=false`），
+> 与上面的本地自签名版是两条独立产物线。
+
 > 开机自启由 `Services/StartupService.cs` 以「注册表 HKCU Run 项」管理。原因：**UIAccess 版本**为 `asInvoker + uiAccess="true"`，而 Windows 只允许中完整性进程启动 UIAccess 程序——Task Scheduler 服务自身是 LocalSystem（高完整性），`/RL LIMITED` 只降权目标进程、不改父进程身份，故计划任务启动必返回 740 而静默失败；`HKCU\...\Run` 由 explorer.exe（中完整性）启动才可靠。运行期数据写在 `%LOCALAPPDATA%\QuickLauncher`（普通权限可写，与安装位置解耦）。
 
 ## 安全与隐私
@@ -111,18 +138,20 @@ dotnet publish src/QuickLauncher.App -c Release -r win-x64 --self-contained true
 - **权限**：以普通权限（`asInvoker`）运行、启动不弹 UAC；脚本动作（C#/JS/Python）在你本机以你的用户权限执行，等同于手动运行，请仅运行你信任的脚本。
 - **调试日志默认关闭**，且不记录窗口标题，可在设置中按需开启。
 
-## 下载校验（v1.0.0）
-发布产物未做 Authenticode 数字签名，请用 SHA256 自行校验完整性：
+## 下载校验
 
-| 文件 | SHA256 |
-|---|---|
-| `速动-v1.0.0-win-x64.zip` | `be42702f2e2207051e7807b706b48fb57443691a5645c9c1e751ab4ad48c1899` |
-| `速动-Setup.exe` | `d735def17918a35b3fdfae87899bf1868bf4546e9fdceb258d887101ae41dd2c` |
+每个 Release 都会附带一份 **`SHA256SUMS.txt`**（由 CI 在打包时自动生成，与产物一同上传），
+下载后用 PowerShell 校验：
 
 ```powershell
-Get-FileHash -Algorithm SHA256 .\速动-v1.0.0-win-x64.zip
-Get-FileHash -Algorithm SHA256 .\速动-Setup.exe
+Get-Content .\SHA256SUMS.txt            # 查看期望值
+Get-FileHash -Algorithm SHA256 .\Sudong-v1.0.0-win-x64.zip
+Get-FileHash -Algorithm SHA256 .\Sudong-Setup.exe
 ```
+
+> **产物名说明**：v1.0.0 的产物名是中文（`速动-Setup.exe`），在 GitHub Release 的上传环节
+> 被编码降级成了 `-Setup.exe` / `-v1.0.0-win-x64.zip` —— 用户下载到的是一眼像恶意文件的名字。
+> 自下一版起产物名统一改为 ASCII（`Sudong-*`），不再有这个问题。
 
 ## 项目结构
 

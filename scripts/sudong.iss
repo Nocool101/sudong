@@ -1,6 +1,8 @@
 ﻿; 速动 (QuickLauncher) 安装脚本 — 开源/CI 版（相对路径，无代码签名）
 ; 供 .github/workflows/release.yml 的 Inno 步骤使用（iscc 需在仓库根目录运行）。
-; 与 build/sudong.iss 的区别：使用相对路径、去掉自签名证书导入（开源无证书、uiAccess=false 无需签名）。
+; 与 build/sudong.iss 的区别：使用相对路径、去掉自签名证书导入（开源无证书、uiAccess=false 无需签名），
+; 因此本版【没有】importcert 附加任务、也没有安装/卸载时的证书导入清理——
+; 证书信任相关的一切只存在于 build\sudong.iss（本地自签名版）。
 
 #define MyAppName "速动"
 #define MyAppNameEn "QuickLauncher"
@@ -18,7 +20,9 @@ DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 PrivilegesRequired=admin
 OutputDir=..\dist
-OutputBaseFilename=速动-Setup
+; 产物名用纯 ASCII：中文文件名在 GitHub Release 上传环节会被编码降级成 "-"
+; （实测 v1.0.0 变成 "-Setup.exe" / "-v1.0.0-win-x64.zip"），下载到的文件名一眼像恶意文件。
+OutputBaseFilename=Sudong-Setup
 SetupIconFile=..\src\QuickLauncher.App\assets\app.ico
 Compression=lzma2
 SolidCompression=yes
