@@ -27,7 +27,7 @@ PrivilegesRequired=admin
 ;   ..\发布版\v1.0.0    → 仓库根的 发布版\v1.0.0
 ; 【为什么不用绝对路径】绝对路径会把维护者的本机磁盘布局写进公开仓库
 ; （审计报告 P-4「源码与文档残留作者本机磁盘布局」），且对其他贡献者不可用。
-OutputDir=..\发布版\v1.0.0
+OutputDir=..\发布版\v{#MyAppVersion}
 ; 产物名用纯 ASCII：中文文件名在 GitHub Release 上传环节会被编码降级成 "-"（实测 v1.0.0
 ; 变成 "-Setup.exe" / "-v1.0.0-win-x64.zip"），用户下载到的文件名一眼像恶意文件。
 ; 版本号取自 MyAppVersion，避免文件名与安装包内版本信息不一致。
