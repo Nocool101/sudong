@@ -126,7 +126,9 @@ end;
 // 那不是真正的选择；真正的替代路径是使用 GitHub Release 上的开源版安装包（不导入任何证书）。
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
-  if CurStep = ssInstall then
+  // 静默安装（/SILENT、/VERYSILENT）时跳过告知框——否则自动化安装会卡在这个对话框上。
+  // 静默模式的使用者一般是脚本/无人值守环境，告知改为写在 README 与发布说明里。
+  if (CurStep = ssInstall) and (not WizardSilent) then
   begin
     MsgBox('安装前请注意 —— 本安装包会向系统添加一张证书：' + #13#10 + #13#10 +
            '  证书：CN=QuickLauncher Dev（速动自签名代码签名证书）' + #13#10 +
