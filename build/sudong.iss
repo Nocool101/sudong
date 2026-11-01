@@ -30,7 +30,8 @@ PrivilegesRequired=admin
 OutputDir=..\发布版\v1.0.0
 ; 产物名用纯 ASCII：中文文件名在 GitHub Release 上传环节会被编码降级成 "-"（实测 v1.0.0
 ; 变成 "-Setup.exe" / "-v1.0.0-win-x64.zip"），用户下载到的文件名一眼像恶意文件。
-OutputBaseFilename=Sudong-Setup-1.0.0
+; 版本号取自 MyAppVersion，避免文件名与安装包内版本信息不一致。
+OutputBaseFilename=Sudong-Setup-{#MyAppVersion}
 SetupIconFile=..\src\QuickLauncher.App\assets\app.ico
 Compression=lzma2
 SolidCompression=yes
