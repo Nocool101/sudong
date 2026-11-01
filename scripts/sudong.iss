@@ -6,7 +6,7 @@
 
 #define MyAppName "速动"
 #define MyAppNameEn "QuickLauncher"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.0.1"
 #define MyAppExe "QuickLauncher.App.exe"
 
 [Setup]
@@ -14,7 +14,7 @@ AppId={{8F3A9C2E-1B7D-4E6A-9A5C-2D4F6B8E0A1C}}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppName}
-VersionInfoVersion=1.0.0.0
+VersionInfoVersion=1.0.1.0
 DefaultDirName={autopf}\{#MyAppNameEn}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes

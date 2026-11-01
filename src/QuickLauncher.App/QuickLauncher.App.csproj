@@ -46,9 +46,9 @@
     <AssemblyTitle>速动</AssemblyTitle>
     <Description>速动 · 全局效率操作面板（鼠标中键/Ctrl 唤出，快速执行预设动作）</Description>
     <Company>速动</Company>
-    <Version>1.0.0</Version>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <FileVersion>1.0.0.0</FileVersion>
+    <Version>1.0.1</Version>
+    <AssemblyVersion>1.0.1.0</AssemblyVersion>
+    <FileVersion>1.0.1.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
