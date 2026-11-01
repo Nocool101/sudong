@@ -34,6 +34,8 @@ public partial class App : Application
     private HotkeyManager? _hotkeyManager;
     private Views.FloatingButtonWindow? _floatingButton;
     private AppSettings _settings = new();
+    /// <summary>静默启动（开机自启）：启动后不显示主窗口。</summary>
+    private bool _silentStart;
     private System.Windows.Forms.NotifyIcon? _trayIcon;
 
     public static ActionStore? Store { get; private set; }
@@ -66,6 +68,10 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+
+        // 静默启动（开机自启）：只驻留托盘，不弹主窗口。
+        // 自启项由 StartupService 写入注册表 Run 并带上 --autostart 参数。
+        _silentStart = StartupArgs.IsSilent(e.Args);
 
         // 仅资源模式：保留 XAML 资源字典，跳过全部启动副作用
         if (ResourceOnlyMode) return;
@@ -203,8 +209,18 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"全局钩子安装失败: {ex.Message}\n\n请尝试以管理员身份运行。",
-                "速动", MessageBoxButton.OK, MessageBoxImage.Error);
+            var msg = $"全局钩子安装失败: {ex.Message}\n\n请尝试以管理员身份运行。";
+            if (_silentStart)
+            {
+                // 静默启动：不弹模态框（开机登录时弹框会一直挂在桌面上），
+                // 只写日志，用户可从托盘菜单「挂起/恢复」或看日志排查。
+                System.Diagnostics.Debug.WriteLine(msg);
+                WriteLog("钩子安装失败", ex);
+            }
+            else
+            {
+                MessageBox.Show(msg, "速动", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         // 悬浮按钮
@@ -222,7 +238,42 @@ public partial class App : Application
             _hotkeyManager.Attach(mainWindow);
             RefreshActionHotkeys();
         };
-        mainWindow.Show();
+
+        // 静默启动（开机自启）：只驻留托盘，不弹主窗口。
+        // 用 EnsureHandle() 强制创建窗口句柄但【不显示】——这样 SourceInitialized 会照常触发，
+        // 全局快捷键能 attach 到主窗口的真实句柄上；
+        // 否则 HotkeyManager.Attach 会退化成额外创建一个隐藏 HwndSource("QLHotkeySink")。
+        // 用户可从托盘图标双击打开；也可在设置里勾选「开机启动时显示主窗口」。
+        if (!_silentStart || _settings.General.ShowMainWindowOnStartup)
+        {
+            mainWindow.Show();
+        }
+        else
+        {
+            new System.Windows.Interop.WindowInteropHelper(mainWindow).EnsureHandle();
+        }
+    }
+
+    /// <summary>
+    /// 写运行日志（%LOCALAPPDATA%\QuickLauncher\logs\app.log）。
+    /// 静默启动时用它替代模态弹窗——开机登录时弹框会一直挂在桌面上。
+    /// </summary>
+    private static void WriteLog(string message, Exception? ex = null)
+    {
+        try
+        {
+            var dir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "QuickLauncher", "logs");
+            Directory.CreateDirectory(dir);
+            File.AppendAllText(Path.Combine(dir, "app.log"),
+                $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {message}{(ex is null ? "" : " | " + ex)}"
+                + Environment.NewLine);
+        }
+        catch
+        {
+            // 日志写入失败不能影响主流程
+        }
     }
 
     private void RunFromCommandLine(Guid actionId)

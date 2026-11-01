@@ -54,7 +54,7 @@
 - SQLite 存储（动作/场景/页面/指令/热键规则/使用统计）
 - 每动作 state JSON（`%LOCALAPPDATA%\QuickLauncher\states\state_<ActionId>.json`）
 - 管理窗口：动作管理（列表/编辑器/步骤编排、导入/导出 JSON）、场景管理、指令管理、扩展热键、设置
-- 托盘常驻、开机自启（注册表 Run 项·登录时由资源管理器启动）、挂起/恢复
+- 托盘常驻、开机自启（注册表 Run 项·登录时由资源管理器启动·**静默启动不弹主窗口**）、挂起/恢复
 - 命令行：`QuickLauncher.App.exe --run <动作Id>` 直接执行动作
 
 ## 快速开始
@@ -63,17 +63,23 @@
 # 构建
 dotnet build
 
-# 运行测试（78 个单元测试）
+# 运行测试（89 个单元测试）
 dotnet test
 
 # 启动应用
 dotnet run --project src/QuickLauncher.App
+
+# 静默启动（只驻留托盘、不弹主窗口）——开机自启走的就是这条路径
+dotnet run --project src/QuickLauncher.App -- --autostart
 ```
 
 启动后：
 1. **单击鼠标中键** 弹出面板（内置 5 个示例动作）
 3. 在"动作管理"中新建/编辑动作；组合动作可添加脚本步骤
 4. 在"设置"中开启桌面悬浮按钮
+
+> **开机自启是静默的**：登录后只驻留托盘，**不会弹出管理窗口**（自启项带 `--autostart` 参数）。
+> 需要时从托盘图标双击打开主窗口；也可在「设置 → 常规 → 开机启动时显示主窗口」勾选后改为开机即显示。
 
 ## 权限模型
 
@@ -137,7 +143,7 @@ QuickLauncher/
 │       ├── Scenes/SceneMatcher.cs   # 场景匹配
 │       ├── Services/PanelService.cs # 面板窗口管理
 │       └── Views/                   # 面板、编辑器、设置等窗口
-└── tests/QuickLauncher.Tests/       # xunit 测试（78 个）
+└── tests/QuickLauncher.Tests/       # xunit 测试（89 个）
 ```
 
 ## 架构要点

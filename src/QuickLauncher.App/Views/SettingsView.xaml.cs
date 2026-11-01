@@ -32,6 +32,7 @@ public partial class SettingsView : UserControl
         CtrlClickBox.IsChecked = s.PanelTrigger.CtrlClick;
         ButtonSizeSlider.Value = s.Appearance.PanelButtonSize;
         RunAtStartupBox.IsChecked = s.General.RunAtStartup;
+        ShowMainWindowOnStartupBox.IsChecked = s.General.ShowMainWindowOnStartup;
         TrackUsageBox.IsChecked = s.General.TrackUsage;
         PlaySoundsBox.IsChecked = s.Appearance.PlaySounds;
         FloatingButtonBox.IsChecked = s.General.ShowFloatingButton;
@@ -59,6 +60,7 @@ public partial class SettingsView : UserControl
         s.PanelTrigger.CtrlClick = CtrlClickBox.IsChecked == true;
         s.Appearance.PanelButtonSize = (int)ButtonSizeSlider.Value;
         s.General.RunAtStartup = RunAtStartupBox.IsChecked == true;
+        s.General.ShowMainWindowOnStartup = ShowMainWindowOnStartupBox.IsChecked == true;
         s.General.TrackUsage = TrackUsageBox.IsChecked == true;
         s.Appearance.PlaySounds = PlaySoundsBox.IsChecked == true;
         s.General.ShowFloatingButton = FloatingButtonBox.IsChecked == true;

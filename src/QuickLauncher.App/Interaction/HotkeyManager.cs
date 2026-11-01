@@ -125,11 +125,27 @@ public sealed class HotkeyManager : IDisposable
     /// <summary>附加到 WPF 窗口以接收 WM_HOTKEY</summary>
     public void Attach(System.Windows.Window window)
     {
-        _source = PresentationSource.FromVisual(window) as HwndSource
-            ?? new HwndSource(new HwndSourceParameters("QLHotkeySink") { ParentWindow = IntPtr.Zero });
+        // 静默启动（开机自启）时主窗口不显示：先 EnsureHandle() 把窗口句柄建出来，
+        // 这样后面能优先复用主窗口自身的句柄，而不必额外创建一个辅助窗口。
+        var helper = new WindowInteropHelper(window);
+        if (helper.EnsureHandle() == IntPtr.Zero) return;
+
+        _source = PresentationSource.FromVisual(window) as HwndSource;
+        if (_source is null)
+        {
+            // 退路：自建接收窗口。必须显式隐藏，否则它是一个可见的普通顶层窗口，
+            // 会出现在任务栏/Alt+Tab 里（静默启动时用户会看到多余的窗口项）。
+            _source = new HwndSource(new HwndSourceParameters("QLHotkeySink") { ParentWindow = IntPtr.Zero });
+            ShowWindow(_source.Handle, SW_HIDE);
+        }
         _hwnd = _source.Handle;
         _source.AddHook(WndProc);
     }
+
+    private const int SW_HIDE = 0;
+
+    [DllImport("user32.dll")]
+    private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
     private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
     {

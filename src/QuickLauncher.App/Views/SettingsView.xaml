@@ -92,6 +92,10 @@
 
                     <CheckBox x:Name="RunAtStartupBox" Content="开机自动启动" Margin="0,0,0,12"
                               Checked="Setting_Changed" Unchecked="Setting_Changed"/>
+                    <CheckBox x:Name="ShowMainWindowOnStartupBox"
+                              Content="开机启动时显示主窗口（默认静默：只驻留托盘，双击托盘图标可打开）"
+                              Margin="0,0,0,12"
+                              Checked="Setting_Changed" Unchecked="Setting_Changed"/>
                     <CheckBox x:Name="TrackUsageBox" Content="记录动作使用统计" Margin="0,0,0,12"
                               Checked="Setting_Changed" Unchecked="Setting_Changed"/>
                     <CheckBox x:Name="PlaySoundsBox" Content="播放音效" Margin="0,0,0,12"

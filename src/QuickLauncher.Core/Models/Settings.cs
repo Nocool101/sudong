@@ -91,6 +91,12 @@ public sealed class GeneralSettings
     /// <summary>开机自启</summary>
     public bool RunAtStartup { get; set; } = true;
 
+    /// <summary>
+    /// 开机自启时是否显示主窗口。默认 false —— 静默启动，只驻留托盘，
+    /// 避免每次登录都弹一个管理窗口（用户可从托盘图标双击打开）。
+    /// </summary>
+    public bool ShowMainWindowOnStartup { get; set; }
+
     /// <summary>启用动作使用统计</summary>
     public bool TrackUsage { get; set; } = true;
 

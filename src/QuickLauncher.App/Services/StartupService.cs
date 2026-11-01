@@ -55,6 +55,13 @@ public static class StartupService
         }
     }
 
+    /// <summary>
+    /// 构造注册表 Run 项的值。
+    /// 路径含空格（Program Files）必须整体加引号，否则 explorer 启动时会在第一个空格处截断；
+    /// 追加 --autostart 让开机启动走「静默启动」（只驻留托盘，不弹主窗口）。
+    /// </summary>
+    public static string BuildRunValue(string exePath) => $"\"{exePath}\" {StartupArgs.Autostart}";
+
     private static (bool ok, string message) SetRunKey()
     {
         var exe = ExePath;
@@ -66,9 +73,8 @@ public static class StartupService
                              ?? Registry.CurrentUser.CreateSubKey(RunKeyPath);
             if (key is null) return (false, "无法打开开机自启注册表项");
 
-            // 路径含空格（Program Files），必须整体加引号，否则 explorer 启动时会在第一个空格处截断。
-            key.SetValue(RunValueName, $"\"{exe}\"", RegistryValueKind.String);
-            return (true, "已开启开机自启（登录时由资源管理器启动，配合 UIAccess 可操作管理员窗口）");
+            key.SetValue(RunValueName, BuildRunValue(exe), RegistryValueKind.String);
+            return (true, "已开启开机自启（登录时静默启动，由资源管理器拉起，配合 UIAccess 可操作管理员窗口）");
         }
         catch (Exception ex)
         {

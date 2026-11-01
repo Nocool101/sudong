@@ -21,7 +21,10 @@ public partial class MainWindow : Window
     public void AllowCloseAndExit()
     {
         _allowClose = true;
-        Close();
+        // 静默启动（开机自启）时主窗口从未显示过；此时用 Application.Shutdown()
+        // 更可靠（Shutdown 会关闭所有窗口并走 OnExit 释放资源）。
+        if (!IsVisible) Application.Current?.Shutdown();
+        else Close();
     }
 
     private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
