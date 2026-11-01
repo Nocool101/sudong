@@ -21,11 +21,17 @@ DefaultDirName={autopf}\{#MyAppNameEn}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 PrivilegesRequired=admin
-OutputDir=E:\AI 工作目录\应用启动器\发布版\v1.0.0
+; 相对路径基于【本脚本所在目录】(build\) 解析，与 scripts\sudong.iss 保持一致：
+;   ..\build\publish\*  → 仓库根的 build\publish（由 pack-selfsigned.ps1 产出）
+;   ..\src\...          → 仓库根的 src
+;   ..\发布版\v1.0.0    → 仓库根的 发布版\v1.0.0
+; 【为什么不用绝对路径】绝对路径会把维护者的本机磁盘布局写进公开仓库
+; （审计报告 P-4「源码与文档残留作者本机磁盘布局」），且对其他贡献者不可用。
+OutputDir=..\发布版\v1.0.0
 ; 产物名用纯 ASCII：中文文件名在 GitHub Release 上传环节会被编码降级成 "-"（实测 v1.0.0
 ; 变成 "-Setup.exe" / "-v1.0.0-win-x64.zip"），用户下载到的文件名一眼像恶意文件。
 OutputBaseFilename=Sudong-Setup-1.0.0
-SetupIconFile=E:\AI 工作目录\应用启动器\src\QuickLauncher.App\assets\app.ico
+SetupIconFile=..\src\QuickLauncher.App\assets\app.ico
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
@@ -50,7 +56,7 @@ Name: "desktopicon"; Description: "创建桌面快捷方式"; GroupDescription: 
 ; 所以「默认勾选」也无法用任务标志实现。
 
 [Files]
-Source: "E:\AI 工作目录\应用启动器\build\publish\*"; DestDir: "{app}"; \
+Source: "..\build\publish\*"; DestDir: "{app}"; \
     Excludes: "*.pdb"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
