@@ -122,6 +122,27 @@ public sealed class HotkeyManager : IDisposable
         return false;
     }
 
+    /// <summary>
+    /// 附加到独立的隐藏接收窗口（不依赖任何 WPF 窗口）。
+    /// 静默启动时主窗口是延迟创建的，没有窗口可挂，就用这个独立接收窗口。
+    /// </summary>
+    public void AttachToSink()
+    {
+        try
+        {
+            _source = new HwndSource(new HwndSourceParameters("QLHotkeySink") { ParentWindow = IntPtr.Zero });
+            ShowWindow(_source.Handle, SW_HIDE);
+            _hwnd = _source.Handle;
+            _source.AddHook(WndProc);
+            QuickLauncher.App.App.WriteLog($"AttachToSink ok, hwnd=0x{_hwnd.ToInt64():X}");
+        }
+        catch (Exception ex)
+        {
+            QuickLauncher.App.App.WriteLog("AttachToSink 失败", ex);
+            throw;
+        }
+    }
+
     /// <summary>附加到 WPF 窗口以接收 WM_HOTKEY</summary>
     public void Attach(System.Windows.Window window)
     {

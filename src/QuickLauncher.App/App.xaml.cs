@@ -73,6 +73,12 @@ public partial class App : Application
         // 自启项由 StartupService 写入注册表 Run 并带上 --autostart 参数。
         _silentStart = StartupArgs.IsSilent(e.Args);
 
+        // 启动诊断：把启动参数、静默标志、父进程写进 app.log。
+        // 「开机后到底弹没弹窗」这类问题必须靠它才能定位——注册表 Run 项是否带参数、
+        // 参数有没有传到、还是被别的程序（第三方启动器）抢先启动了，都只能从这里看出来。
+        WriteLog($"启动诊断: args=[{string.Join(' ', e.Args)}] silent={_silentStart} " +
+                 $"parent={ParentProcessName()} pid={Environment.ProcessId}");
+
         // 仅资源模式：保留 XAML 资源字典，跳过全部启动副作用
         if (ResourceOnlyMode) return;
 
@@ -230,27 +236,70 @@ public partial class App : Application
         SetupTrayIcon();
 
         // 主窗口（设置/编辑器）
-        var mainWindow = new Views.MainWindow();
-        MainWindow = mainWindow;
-        mainWindow.SourceInitialized += (_, _) =>
-        {
-            _hotkeyManager = new HotkeyManager();
-            _hotkeyManager.Attach(mainWindow);
-            RefreshActionHotkeys();
-        };
-
-        // 静默启动（开机自启）：只驻留托盘，不弹主窗口。
-        // 用 EnsureHandle() 强制创建窗口句柄但【不显示】——这样 SourceInitialized 会照常触发，
-        // 全局快捷键能 attach 到主窗口的真实句柄上；
-        // 否则 HotkeyManager.Attach 会退化成额外创建一个隐藏 HwndSource("QLHotkeySink")。
-        // 用户可从托盘图标双击打开；也可在设置里勾选「开机启动时显示主窗口」。
+        //
+        // 【静默启动时不创建主窗口】开机自启只需要托盘 + 钩子，主窗口毫无用处。
+        // 而创建它要加载 MainWindow.xaml（其中含 Icon="pack://application:,,,/assets/app.ico"
+        // 这类 pack 资源引用），一旦资源解析失败就是 XamlParseException → 整个应用崩溃，
+        // 开机时环境尚未就绪，这种崩溃概率明显更高（10/30 的 crash.log 就有多条
+        // 「找不到资源 assets/app.ico」）。所以静默模式下彻底不碰主窗口，
+        // 推迟到用户从托盘双击打开时再创建。
+        // 用户若在设置里勾选了「开机启动时显示主窗口」，则仍然创建并显示。
         if (!_silentStart || _settings.General.ShowMainWindowOnStartup)
         {
-            mainWindow.Show();
+            EnsureMainWindow().Show();
         }
-        else
+
+        // 全局快捷键接收器：静默模式下没有主窗口可挂，改用独立的隐藏接收窗口。
+        _hotkeyManager = new HotkeyManager();
+        if (_silentStart) _hotkeyManager.AttachToSink();
+        else _hotkeyManager.Attach(EnsureMainWindow());
+        RefreshActionHotkeys();
+    }
+
+    /// <summary>
+    /// 取当前进程的父进程名（用于启动诊断：判断是 explorer 自启、用户手动，
+    /// 还是被第三方启动器拉起）。.NET 没有公开的 Parent API，用 NtQueryInformationProcess。
+    /// </summary>
+    private static string ParentProcessName()
+    {
+        try
         {
-            new System.Windows.Interop.WindowInteropHelper(mainWindow).EnsureHandle();
+            using var self = System.Diagnostics.Process.GetCurrentProcess();
+            var parentId = GetParentProcessId(self.Id);
+            if (parentId <= 0) return "?";
+            using var parent = System.Diagnostics.Process.GetProcessById((int)parentId);
+            return parent.ProcessName;
+        }
+        catch
+        {
+            return "?";
+        }
+    }
+
+    [System.Runtime.InteropServices.DllImport("ntdll.dll")]
+    private static extern int NtQueryInformationProcess(
+        IntPtr hProcess, int infoClass, IntPtr info, int infoLength, out int returnLength);
+
+    private static int GetParentProcessId(int pid)
+    {
+        try
+        {
+            using var p = System.Diagnostics.Process.GetProcessById(pid);
+            var h = p.Handle;
+            var buffer = Marshal.AllocHGlobal(1024);
+            try
+            {
+                int ret;
+                int status = NtQueryInformationProcess(h, 0, buffer, 1024, out ret);
+                if (status != 0) return -1;
+                // PROCESS_BASIC_INFORMATION: InheritedFromUniqueProcessId 在 x64 上偏移 40
+                return Marshal.ReadInt32(buffer, IntPtr.Size == 8 ? 40 : 8);
+            }
+            finally { Marshal.FreeHGlobal(buffer); }
+        }
+        catch
+        {
+            return -1;
         }
     }
 
@@ -258,7 +307,7 @@ public partial class App : Application
     /// 写运行日志（%LOCALAPPDATA%\QuickLauncher\logs\app.log）。
     /// 静默启动时用它替代模态弹窗——开机登录时弹框会一直挂在桌面上。
     /// </summary>
-    private static void WriteLog(string message, Exception? ex = null)
+    public static void WriteLog(string message, Exception? ex = null)
     {
         try
         {
@@ -381,15 +430,39 @@ public partial class App : Application
 
     #endregion
 
+    /// <summary>
+    /// 获取（必要时创建）主窗口。
+    /// 静默启动时主窗口是【延迟创建】的——开机时环境尚未就绪，加载 MainWindow.xaml
+    /// 可能因 pack 资源解析失败而抛 XamlParseException 导致整个应用崩溃；
+    /// 等用户真正从托盘打开时环境早已就绪，再创建就安全了。
+    /// </summary>
+    private Views.MainWindow EnsureMainWindow()
+    {
+        if (MainWindow is Views.MainWindow existing) return existing;
+
+        var w = new Views.MainWindow();
+        MainWindow = w;
+        w.SourceInitialized += (_, _) => { };
+        return w;
+    }
+
     private void ShowMainWindow()
     {
         Dispatcher.BeginInvoke(new Action(() =>
         {
-            if (MainWindow is { } w)
+            try
             {
+                var w = EnsureMainWindow();
                 w.Show();
                 w.WindowState = WindowState.Normal;
                 w.Activate();
+            }
+            catch (Exception ex)
+            {
+                // 主窗口创建失败（如 XAML 资源解析失败）不应拖垮整个应用
+                WriteLog("打开主窗口失败", ex);
+                MessageBox.Show($"打开主窗口失败：{ex.Message}", "速动",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }));
     }
