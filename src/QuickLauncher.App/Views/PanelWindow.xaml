@@ -1,6 +1,7 @@
 <Window x:Class="QuickLauncher.App.Views.PanelWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:QuickLauncher.App.Views"
         Title="速动"
         WindowStyle="None"
         AllowsTransparency="True"
@@ -16,35 +17,42 @@
         PreviewMouseWheel="Window_PreviewMouseWheel">
 
     <Window.Resources>
-        <!-- 动作磁贴 -->
+        <!-- 动作磁贴：立体玻璃质感 + 顶部反光 + 悬停微发光 -->
         <Style x:Key="ActionButton" TargetType="Button">
             <Setter Property="Width" Value="94"/>
             <Setter Property="Height" Value="70"/>
-            <Setter Property="Margin" Value="3"/>
-            <Setter Property="Background" Value="#17FFFFFF"/>
-            <Setter Property="Foreground" Value="#EEEEEE"/>
-            <Setter Property="BorderBrush" Value="#1FFFFFFF"/>
+            <Setter Property="Margin" Value="3.5"/>
+            <Setter Property="Background" Value="{DynamicResource Brush.Tile}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Stroke}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}"
+                        <Border x:Name="Root" Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="11" SnapsToDevicePixels="True">
-                            <Grid>
-                                <Border x:Name="Overlay" Background="Transparent" CornerRadius="11"/>
+                                CornerRadius="13" SnapsToDevicePixels="True">
+                            <Grid ClipToBounds="True">
+                                <!-- 玻璃厚度感：上缘高光向下渐隐 -->
+                                <Border Background="{DynamicResource Brush.Specular}" CornerRadius="13,13,0,0" Height="14" VerticalAlignment="Top"/>
+                                <!-- 悬浮光环边框 -->
+                                <Border x:Name="GlowBorder" BorderBrush="{DynamicResource Brush.Brand}"
+                                        BorderThickness="1.2" CornerRadius="13" Opacity="0"/>
+                                <!-- hover/press 叠加层 -->
+                                <Border x:Name="Overlay" Background="Transparent" CornerRadius="13"/>
                                 <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Grid>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Overlay" Property="Background" Value="#1FFFFFFF"/>
-                                <Setter Property="BorderBrush" Value="{StaticResource Brush.Brand}"/>
+                                <Setter TargetName="Overlay" Property="Background" Value="{DynamicResource Brush.HoverOverlay}"/>
+                                <Setter TargetName="GlowBorder" Property="Opacity" Value="1"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Overlay" Property="Background" Value="#2AFFFFFF"/>
+                                <Setter TargetName="Overlay" Property="Background" Value="{DynamicResource Brush.PressOverlay}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -54,94 +62,176 @@
 
         <!-- 扁平图标/文字按钮（顶栏、翻页） -->
         <Style x:Key="FlatButton" TargetType="Button">
-            <Setter Property="Foreground" Value="{StaticResource Brush.TextSecondary}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Brush.TextSecondary}"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="Padding" Value="7,5"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="bg" Background="Transparent" CornerRadius="6"
+                        <Border x:Name="bg" Background="Transparent" CornerRadius="8"
                                 Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="bg" Property="Background" Value="#1AFFFFFF"/>
-                                <Setter Property="Foreground" Value="White"/>
+                                <Setter TargetName="bg" Property="Background" Value="{DynamicResource Brush.HoverOverlay}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Opacity" Value="0.4"/>
+                                <Setter Property="Opacity" Value="0.35"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <!-- 翻页胶囊按钮 -->
+        <Style x:Key="PageButton" TargetType="Button" BasedOn="{StaticResource FlatButton}">
+            <Setter Property="Background" Value="{DynamicResource Brush.Tile}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Stroke}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="12,4"/>
+            <Setter Property="FontSize" Value="11.5"/>
+        </Style>
     </Window.Resources>
 
-    <!-- 渐变描边 + 深色面板 -->
-    <Border CornerRadius="15" Background="{StaticResource Brush.Gradient}" Padding="1" Opacity="0.98">
+    <!-- 渐变描边 + 玻璃面板 -->
+    <Border CornerRadius="18" Background="{DynamicResource Brush.Gradient}" Padding="1.2" Opacity="0.98">
         <Border.Effect>
-            <DropShadowEffect BlurRadius="22" ShadowDepth="3" Opacity="0.55"/>
+            <DropShadowEffect BlurRadius="36" ShadowDepth="6" Direction="270" Opacity="0.65" Color="#000000"/>
         </Border.Effect>
-        <Border CornerRadius="14" Background="#F00F1218">
-            <DockPanel Margin="0,0,0,8">
+        <Border CornerRadius="17" Background="{DynamicResource Brush.PanelBg}" ClipToBounds="True">
+            <Grid>
+                <!-- 面板内的极光光晕，让玻璃有色彩层次 -->
+                <Ellipse Width="340" Height="340" HorizontalAlignment="Left" VerticalAlignment="Top"
+                         Margin="-140,-160,0,0" Fill="{DynamicResource Brush.Bloom1}" Opacity="0.30"
+                         IsHitTestVisible="False"/>
+                <Ellipse Width="300" Height="300" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                         Margin="0,0,-120,-130" Fill="{DynamicResource Brush.Bloom2}" Opacity="0.28"
+                         IsHitTestVisible="False"/>
 
-                <!-- 上区标题栏（全局） -->
-                <DockPanel DockPanel.Dock="Top" Margin="12,9,10,5">
-                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                        <Button x:Name="SettingsButton" Content="⚙" Click="SettingsButton_Click"
-                                Style="{StaticResource FlatButton}" FontFamily="Segoe UI Symbol"
-                                FontSize="14" Padding="7,3" ToolTip="面板设置"/>
-                        <Button x:Name="CloseButton" Content="✕" Click="CloseButton_Click"
-                                Style="{StaticResource FlatButton}" FontSize="12" Padding="7,3"
-                                ToolTip="关闭面板"/>
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <Image Source="pack://application:,,,/assets/logo.png" Width="16" Height="16"
-                               VerticalAlignment="Center"/>
-                        <TextBlock x:Name="GlobalTitleText" Text="速动 · 全局"
-                                   Foreground="{StaticResource Brush.TextSecondary}" FontSize="12"
-                                   VerticalAlignment="Center" Margin="8,0,0,0"/>
-                    </StackPanel>
-                </DockPanel>
+                <!-- ═════════ 内容容器 ═════════
+                     四行全部按内容自适应（Height=Auto），窗口总高由代码按实际测量结果给出，
+                     避免 DockPanel 里「ScrollViewer 抢走底栏空间」导致翻页栏被压扁。 -->
+                <Grid x:Name="ContentGrid" Margin="0,0,0,10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
 
-                <!-- 搜索框 -->
-                <TextBox x:Name="SearchBox" DockPanel.Dock="Top" Margin="12,2,12,8"
-                         Tag="搜索动作…"
-                         BorderBrush="{StaticResource Brush.Stroke}"
-                         TextChanged="SearchBox_TextChanged"
-                         KeyDown="SearchBox_KeyDown"/>
+                    <!-- ═════════ 上区标题栏（全局） ═════════ -->
+                    <Grid Grid.Row="0" Margin="14,11,12,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Border Width="26" Height="26" CornerRadius="8" Background="{DynamicResource Brush.GradientSoft}"
+                                    BorderBrush="{DynamicResource Brush.Stroke}" BorderThickness="1"
+                                    Margin="0,0,9,0">
+                                <Image Source="pack://application:,,,/QuickLauncher.App;component/assets/logo.png"
+                                       Width="18" Height="18" VerticalAlignment="Center" HorizontalAlignment="Center"
+                                       RenderOptions.BitmapScalingMode="HighQuality"/>
+                            </Border>
+                            <TextBlock x:Name="GlobalTitleText" Text="速动 · 全局"
+                                       Foreground="{DynamicResource Brush.TextPrimary}" FontSize="13"
+                                       FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Button x:Name="SettingsButton" Click="SettingsButton_Click"
+                                    Style="{DynamicResource FlatButton}" ToolTip="设置" Margin="0,0,4,0">
+                                <views:IconView Kind="Sliders" Size="15"/>
+                            </Button>
+                            <Button x:Name="CloseButton" Click="CloseButton_Click"
+                                    Style="{DynamicResource FlatButton}" ToolTip="关闭面板 (Esc)">
+                                <views:IconView Kind="Close" Size="13"/>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
 
-                <!-- 双区内容：上区全局 + 下区上下文（禁用滚动条，一屏全显） -->
-                <ScrollViewer VerticalScrollBarVisibility="Disabled" HorizontalScrollBarVisibility="Disabled">
-                    <StackPanel>
-                        <UniformGrid x:Name="GlobalGrid" Columns="4" Margin="8,0,8,2"
-                                     MouseEnter="ZoneGrid_MouseEnter"/>
-                        <Border x:Name="ZoneSeparator" Height="1" Background="#1FFFFFFF"
-                                Margin="8,7,8,7"/>
-                        <TextBlock x:Name="ContextTitleText" Foreground="{StaticResource Brush.TextMuted}" FontSize="11.5"
-                                   Margin="12,0,12,5"/>
-                        <UniformGrid x:Name="ContextGrid" Columns="4" Margin="8,0,8,2"
-                                     MouseEnter="ZoneGrid_MouseEnter"/>
-                    </StackPanel>
-                </ScrollViewer>
+                    <!-- ═════════ 搜索框 ═════════ -->
+                    <Grid Grid.Row="1" Margin="12,2,12,10">
+                        <Border CornerRadius="12" Background="{DynamicResource Brush.Tile}"
+                                BorderBrush="{DynamicResource Brush.Stroke}" BorderThickness="1">
+                            <Grid>
+                                <views:IconView Kind="Search" Size="14" HorizontalAlignment="Left"
+                                                VerticalAlignment="Center" Margin="12,0,0,0"
+                                                Foreground="{DynamicResource Brush.Brand}"/>
+                                <TextBox x:Name="SearchBox" Tag="搜索动作或输入指令…" FontSize="13"
+                                         Padding="34,8,44,8" Background="Transparent"
+                                         BorderThickness="0"
+                                         TextChanged="SearchBox_TextChanged"
+                                         KeyDown="SearchBox_KeyDown"/>
+                                <!-- 快捷键提示 -->
+                                <Border HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0"
+                                        Background="{DynamicResource Brush.HoverOverlay}"
+                                        BorderBrush="{DynamicResource Brush.Stroke}" BorderThickness="1"
+                                        CornerRadius="5" Padding="5,2" IsHitTestVisible="False">
+                                    <TextBlock Text="ESC" FontSize="9.5" FontWeight="Bold"
+                                               Foreground="{DynamicResource Brush.TextMuted}"/>
+                                </Border>
+                            </Grid>
+                        </Border>
+                    </Grid>
 
-                <!-- 底栏 -->
-                <DockPanel DockPanel.Dock="Bottom" Margin="12,5,10,0">
-                    <TextBlock x:Name="PageInfoText" Text="1 / 1" Foreground="{StaticResource Brush.TextMuted}" FontSize="11"
-                               VerticalAlignment="Center"/>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button x:Name="PrevPageButton" Content="‹ 上一页" Click="PrevPageButton_Click"
-                                Style="{StaticResource FlatButton}" FontSize="11"/>
-                        <Button x:Name="NextPageButton" Content="下一页 ›" Click="NextPageButton_Click"
-                                Style="{StaticResource FlatButton}" FontSize="11"/>
-                    </StackPanel>
-                </DockPanel>
+                    <!-- ═════════ 双区内容：上区全局 + 下区上下文 ═════════ -->
+                    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Disabled" HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel>
+                            <UniformGrid x:Name="GlobalGrid" Columns="4" Margin="8,0,8,2"
+                                         MouseEnter="ZoneGrid_MouseEnter"/>
 
-            </DockPanel>
+                            <!-- 分区分隔：两端渐隐的发光细线 -->
+                            <Border x:Name="ZoneSeparator" Height="1" Margin="14,8,14,8"
+                                    Background="{DynamicResource Brush.Divider}"/>
+
+                            <!-- 上下文区标题（当前程序 / 场景名） -->
+                            <Grid Margin="14,2,14,6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Width="3" Height="13" CornerRadius="2"
+                                        Background="{DynamicResource Brush.Gradient}"
+                                        VerticalAlignment="Center"/>
+                                <TextBlock x:Name="ContextTitleText" Grid.Column="1"
+                                           Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12"
+                                           FontWeight="Medium" Margin="9,0,0,0" VerticalAlignment="Center"/>
+                            </Grid>
+
+                            <UniformGrid x:Name="ContextGrid" Columns="4" Margin="8,0,8,2"
+                                         MouseEnter="ZoneGrid_MouseEnter"/>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <!-- ═════════ 底栏 ═════════ -->
+                    <Grid Grid.Row="3" Margin="14,6,12,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Border Background="{DynamicResource Brush.Tile}"
+                                BorderBrush="{DynamicResource Brush.Stroke}" BorderThickness="1"
+                                CornerRadius="8" Padding="10,4"
+                                VerticalAlignment="Center" HorizontalAlignment="Left">
+                            <TextBlock x:Name="PageInfoText" Text="1 / 1"
+                                       Foreground="{DynamicResource Brush.TextMuted}" FontSize="11"
+                                       FontWeight="Medium"/>
+                        </Border>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Button x:Name="PrevPageButton" Click="PrevPageButton_Click"
+                                    Style="{DynamicResource PageButton}" Content="‹ 上一页" Margin="0,0,6,0"/>
+                            <Button x:Name="NextPageButton" Click="NextPageButton_Click"
+                                    Style="{DynamicResource PageButton}" Content="下一页 ›"/>
+                        </StackPanel>
+                    </Grid>
+
+                </Grid>
+            </Grid>
         </Border>
     </Border>
 </Window>

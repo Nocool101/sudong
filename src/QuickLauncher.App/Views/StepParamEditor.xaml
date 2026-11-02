@@ -1,33 +1,56 @@
 <UserControl x:Class="QuickLauncher.App.Views.StepParamEditor"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             Background="{StaticResource Brush.BgBase}">
+             xmlns:views="clr-namespace:QuickLauncher.App.Views"
+             Background="Transparent">
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="14">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="14,6,14,14">
         <StackPanel x:Name="Root">
-            <TextBlock x:Name="HeaderText" Foreground="White" FontSize="14" FontWeight="SemiBold"
-                       Margin="0,0,0,4"/>
-            <TextBlock x:Name="DescText" Foreground="{StaticResource Brush.TextMuted}" FontSize="11" TextWrapping="Wrap"
-                       Margin="0,0,0,12"/>
+            <!-- 步骤头部信息卡 -->
+            <Border Background="{DynamicResource Brush.BgCard}"
+                    BorderBrush="{DynamicResource Brush.Stroke}" BorderThickness="1"
+                    CornerRadius="12" Padding="14,12" Margin="0,0,0,16">
+                <StackPanel>
+                    <TextBlock x:Name="HeaderText" Foreground="{DynamicResource Brush.TextPrimary}" FontSize="14.5"
+                               FontWeight="SemiBold" Margin="0,0,0,4"/>
+                    <TextBlock x:Name="DescText" Foreground="{DynamicResource Brush.TextMuted}" FontSize="12"
+                               TextWrapping="Wrap" LineHeight="18"/>
+                </StackPanel>
+            </Border>
 
             <!-- 参数编辑区（动态生成） -->
             <StackPanel x:Name="ParamsPanel"/>
 
             <!-- 输出参数 -->
-            <TextBlock x:Name="OutputHeader" Text="输出到变量" Foreground="{StaticResource Brush.TextSecondary}" FontSize="12"
-                       Margin="0,14,0,6" Visibility="Collapsed"/>
+            <StackPanel x:Name="OutputHeader" Orientation="Horizontal" Margin="0,12,0,8" Visibility="Collapsed">
+                <views:IconView Kind="ArrowRight" Size="13" Foreground="{DynamicResource Brush.Brand}"
+                                VerticalAlignment="Center" Margin="0,0,6,0"/>
+                <TextBlock Text="输出到变量" Foreground="{DynamicResource Brush.TextSecondary}"
+                           FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
+            </StackPanel>
             <StackPanel x:Name="OutputsPanel"/>
 
             <!-- 容器步骤子步骤提示 -->
-            <Border x:Name="ChildrenHint" Background="#331A1E27" CornerRadius="4" Padding="10,8"
-                    Margin="0,14,0,0" Visibility="Collapsed">
+            <Border x:Name="ChildrenHint" Background="{DynamicResource Brush.Tile}" CornerRadius="12"
+                    Padding="14,12" Margin="0,16,0,0" Visibility="Collapsed"
+                    BorderBrush="{DynamicResource Brush.Stroke}" BorderThickness="1">
                 <StackPanel>
-                    <TextBlock Text="此步骤包含子步骤（如果/循环/步骤组）" Foreground="{StaticResource Brush.TextSecondary}" FontSize="11"/>
-                    <TextBlock x:Name="ChildrenCountText" Foreground="{StaticResource Brush.TextPrimary}" FontSize="12"
-                               Margin="0,4,0,0"/>
-                    <Button x:Name="EditChildrenButton" Content="编辑子步骤" Click="EditChildrenButton_Click"
-                            HorizontalAlignment="Left" Margin="0,8,0,0" Padding="12,4"
-                            Background="{StaticResource Brush.Gradient}" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <views:IconView Kind="Layers" Size="14" Foreground="{DynamicResource Brush.Brand}"
+                                        VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <TextBlock Text="容器嵌套步骤（如果 / 循环 / 步骤组）" Foreground="{DynamicResource Brush.TextSecondary}"
+                                   FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <TextBlock x:Name="ChildrenCountText" Foreground="{DynamicResource Brush.TextPrimary}"
+                               FontSize="13" Margin="0,2,0,0"/>
+                    <Button x:Name="EditChildrenButton" Click="EditChildrenButton_Click"
+                            HorizontalAlignment="Left" Margin="0,12,0,0" Padding="14,7"
+                            Style="{StaticResource Btn.Primary}">
+                        <StackPanel Orientation="Horizontal">
+                            <views:IconView Kind="Pencil" Size="14"/>
+                            <TextBlock Text="编辑子步骤" Margin="6,0,0,0"/>
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
             </Border>
         </StackPanel>

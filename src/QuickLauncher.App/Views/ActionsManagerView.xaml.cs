@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -162,5 +162,27 @@ public partial class ActionsManagerView : UserControl
     {
         if (Selected is { } action)
             OpenEditor(action);
+    }
+
+    /// <summary>
+    /// 动作列表搜索过滤：按名称模糊匹配（忽略大小写）。
+    /// XAML 里的搜索框 TextChanged 绑定到本方法，两端必须成对存在。
+    /// </summary>
+    private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (App.Store is null) return;
+
+        var all = App.Store.LoadActions().OrderBy(a => a.Name).ToList();
+        var keyword = SearchBox.Text?.Trim() ?? string.Empty;
+
+        _actions = keyword.Length == 0
+            ? all
+            : all.Where(a => a.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase)).ToList();
+
+        ActionsList.ItemsSource = null;
+        ActionsList.ItemsSource = _actions;
+        StatusText.Text = keyword.Length == 0
+            ? $"共 {all.Count} 个动作"
+            : $"筛选出 {_actions.Count} / {all.Count} 个动作";
     }
 }

@@ -9,6 +9,7 @@ using QuickLauncher.App.Interaction;
 using QuickLauncher.Steps;
 using QuickLauncher.App.Scenes;
 using QuickLauncher.App.Services;
+using QuickLauncher.App.Themes;
 using QuickLauncher.Engine;
 using QuickLauncher.Models;
 using QuickLauncher.Services;
@@ -166,6 +167,25 @@ public partial class App : Application
         var settingsJson = _store.GetCommon("settings");
         if (settingsJson is not null)
             _settings = Json.Deserialize<AppSettings>(settingsJson) ?? new AppSettings();
+
+        // 主题：应用配色并启动「跟随系统」监听。
+        // 老配置里存的 "Dark" 只是旧版本的硬编码默认值（用户从未选过主题），
+        // 这里按「跟随系统」处理一次，之后由用户在新设置页的选择为准。
+        try
+        {
+            var appearance = _settings.Appearance;
+            if (!appearance.ThemeSelected)
+            {
+                appearance.Theme = "System";
+                appearance.ThemeSelected = true;
+                SaveSettings();
+            }
+            ThemeManager.Initialize(ThemeManager.ParseMode(appearance.Theme));
+        }
+        catch (Exception ex)
+        {
+            WriteLog("主题初始化失败", ex);
+        }
 
         // 开机自启迁移：旧版用 schtasks 计划任务——但 UIAccess 程序只能由「中完整性」进程启动，
         // 而 Task Scheduler 服务自身是 LocalSystem（高完整性），/RL LIMITED 只降权目标进程、不改父进程身份，

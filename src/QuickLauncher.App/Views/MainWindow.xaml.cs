@@ -1,8 +1,10 @@
 using System;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using QuickLauncher.App.Views;
+using System.Windows.Input;
+using System.Windows.Interop;
+using System.Windows.Shell;
+using QuickLauncher.App.Themes;
 
 namespace QuickLauncher.App.Views;
 
@@ -15,6 +17,10 @@ public partial class MainWindow : Window
         InitializeComponent();
         NavActions_Click(this, new RoutedEventArgs());
         Closing += MainWindow_Closing;
+        SourceInitialized += MainWindow_SourceInitialized;
+        StateChanged += MainWindow_StateChanged;
+        ThemeManager.ThemeChanged += OnThemeChanged;
+        Closed += (_, _) => ThemeManager.ThemeChanged -= OnThemeChanged;
     }
 
     /// <summary>真正退出（托盘菜单调用）</summary>
@@ -35,9 +41,64 @@ public partial class MainWindow : Window
         Hide();
     }
 
+    /// <summary>窗口句柄就绪后开启系统毛玻璃背板（Acrylic/Mica）</summary>
+    private void MainWindow_SourceInitialized(object? sender, EventArgs e)
+    {
+        ApplyBackdrop();
+    }
+
+    private void ApplyBackdrop()
+    {
+        try
+        {
+            WindowBackdrop.TryApply(this, CurrentTint());
+        }
+        catch
+        {
+            // 没有毛玻璃背板也不影响使用：窗口自身底色已是半透明玻璃色
+        }
+    }
+
+    /// <summary>主题切换后重新应用背板（Win10 路径的磨砂颜色随主题变化）</summary>
+    private void OnThemeChanged(bool isDark)
+    {
+        Dispatcher.BeginInvoke(new Action(ApplyBackdrop));
+    }
+
+    private static System.Windows.Media.Color CurrentTint()
+        => ThemeManager.IsDark
+            ? System.Windows.Media.Color.FromArgb(0x99, 0x0A, 0x0D, 0x15)
+            : System.Windows.Media.Color.FromArgb(0x99, 0xF2, 0xF6, 0xFC);
+
+    /// <summary>最大化/还原切换：同步窗口圆角与标题栏图标</summary>
+    private void MainWindow_StateChanged(object? sender, EventArgs e)
+    {
+        var maximized = WindowState == WindowState.Maximized;
+
+        // 最大化时去掉圆角，否则窗口内容会被圆角区域裁掉
+        var chrome = WindowChrome.GetWindowChrome(this);
+        if (chrome is not null)
+            chrome.CornerRadius = maximized ? new CornerRadius(0) : new CornerRadius(14);
+        RootPanel.CornerRadius = maximized ? new CornerRadius(0) : new CornerRadius(14);
+
+        if (MaximizeButton is { } btn)
+        {
+            var icon = btn.Content as Views.IconView;
+            if (icon is not null) icon.Kind = maximized ? "Restore" : "Maximize";
+            btn.ToolTip = maximized ? "向下还原" : "最大化";
+        }
+    }
+
+    private void MinimizeButton_Click(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
+
+    private void MaximizeButton_Click(object sender, RoutedEventArgs e)
+        => WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+
+    private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();
+
     private void SetActiveNav(Button active)
     {
-        // 选中态由 NavButton 样式中 Tag="Active" 触发器渲染（渐变底 + 左竖条 + 白字）
+        // 选中态由 NavButton 样式中 Tag="Active" 触发器渲染（渐变底 + 左竖条 + 高亮文字）
         foreach (var btn in new[] { NavActions, NavScenes, NavCommands, NavHotkeys, NavSettings })
             btn.Tag = btn == active ? "Active" : null;
     }

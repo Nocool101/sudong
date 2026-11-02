@@ -1,0 +1,10 @@
+<UserControl x:Class="QuickLauncher.App.Views.IconView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Focusable="False" IsHitTestVisible="False" Background="Transparent"
+             Width="16" Height="16">
+    <Path x:Name="Shape" Stretch="Uniform" Fill="{x:Null}"
+          Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=UserControl}}"
+          StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+          StrokeThickness="2.625"/>
+</UserControl>

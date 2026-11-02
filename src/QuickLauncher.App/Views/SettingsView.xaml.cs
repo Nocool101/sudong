@@ -4,6 +4,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Win32;
+using QuickLauncher.App.Themes;
 
 namespace QuickLauncher.App.Views;
 
@@ -38,6 +39,30 @@ public partial class SettingsView : UserControl
         FloatingButtonBox.IsChecked = s.General.ShowFloatingButton;
         DebugLogBox.IsChecked = s.General.DebugLog;
         UpdateLabels();
+        UpdateThemeButtons();
+    }
+
+    /// <summary>同步主题分段按钮的选中态（Tag="Selected" 驱动样式）</summary>
+    private void UpdateThemeButtons()
+    {
+        ThemeSystemButton.Tag = ThemeManager.Mode == AppTheme.System ? "Selected" : null;
+        ThemeLightButton.Tag = ThemeManager.Mode == AppTheme.Light ? "Selected" : null;
+        ThemeDarkButton.Tag = ThemeManager.Mode == AppTheme.Dark ? "Selected" : null;
+    }
+
+    /// <summary>切换主题：立即生效并写入设置（下次启动沿用）</summary>
+    private void ThemeButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { CommandParameter: string mode }) return;
+
+        var theme = ThemeManager.ParseMode(mode);
+        ThemeManager.SetTheme(theme);
+        App.Settings.Appearance.Theme = ThemeManager.ToSettingValue(theme);
+        App.Settings.Appearance.ThemeSelected = true;
+        ((App)Application.Current).SaveSettings();
+
+        UpdateThemeButtons();
+        SavedText.Text = $"主题已更新 · {DateTime.Now:HH:mm:ss}";
     }
 
     private void UpdateLabels()

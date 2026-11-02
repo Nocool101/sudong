@@ -1,17 +1,26 @@
 <Window x:Class="QuickLauncher.App.Views.PageEditorWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="动作页编辑器" Width="720" Height="620"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        xmlns:views="clr-namespace:QuickLauncher.App.Views"
+        Title="动作页编辑器" Width="760" Height="650"
         WindowStartupLocation="CenterOwner"
-        Background="{StaticResource Brush.BgBase}">
+        WindowStyle="None" ResizeMode="NoResize"
+        Background="Transparent"
+        Template="{StaticResource DialogShell}">
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="46" GlassFrameThickness="0"
+                            CornerRadius="16" ResizeBorderThickness="0"/>
+    </shell:WindowChrome.WindowChrome>
 
     <Window.Resources>
+        <!-- 磁贴格子 -->
         <Style x:Key="CellButton" TargetType="Button">
-            <Setter Property="Background" Value="#33FFFFFF"/>
-            <Setter Property="Foreground" Value="{StaticResource Brush.TextPrimary}"/>
-            <Setter Property="BorderBrush" Value="#40FFFFFF"/>
+            <Setter Property="Background" Value="{DynamicResource Brush.Tile}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Stroke}"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Margin" Value="3"/>
+            <Setter Property="Margin" Value="3.5"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
                 <Setter.Value>
@@ -19,12 +28,17 @@
                         <Border x:Name="border" Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="6" SnapsToDevicePixels="True">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                CornerRadius="12" SnapsToDevicePixels="True">
+                            <Grid ClipToBounds="True">
+                                <Border Background="{DynamicResource Brush.Specular}" CornerRadius="12,12,0,0" Height="12" VerticalAlignment="Top"/>
+                                <Border x:Name="ov" Background="Transparent" CornerRadius="12"/>
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Grid>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource Brush.Brand}"/>
+                                <Setter TargetName="ov" Property="Background" Value="{DynamicResource Brush.HoverOverlay}"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource Brush.Brand}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -33,40 +47,63 @@
         </Style>
     </Window.Resources>
 
-    <DockPanel Margin="16">
-        <!-- 底部按钮 -->
-        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right"
-                    Margin="0,12,0,0">
-            <Button Content="保存" IsDefault="True" Click="SaveButton_Click"
-                    Width="90" Height="32" Margin="0,0,8,0"
-                    Background="{StaticResource Brush.Gradient}" Foreground="White" BorderThickness="0"/>
-            <Button Content="取消" IsCancel="True"
-                    Width="90" Height="32" Background="{StaticResource Brush.BgCardHover}" Foreground="{StaticResource Brush.TextSecondary}" BorderThickness="0"/>
-        </StackPanel>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
 
         <!-- 顶部工具栏 -->
-        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,12">
-            <TextBlock Text="页名" Foreground="{StaticResource Brush.TextSecondary}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-            <TextBox x:Name="NameBox" Width="160" Background="{StaticResource Brush.BgCardHover}" Foreground="{StaticResource Brush.TextPrimary}"
-                     BorderThickness="0" Padding="8,6"/>
-            <TextBlock Text="列数" Foreground="{StaticResource Brush.TextSecondary}" VerticalAlignment="Center" Margin="16,0,8,0"/>
-            <TextBox x:Name="ColumnsBox" Width="50" Background="{StaticResource Brush.BgCardHover}" Foreground="{StaticResource Brush.TextPrimary}"
-                     BorderThickness="0" Padding="8,6" TextChanged="LayoutBox_TextChanged"/>
-            <TextBlock Text="行数" Foreground="{StaticResource Brush.TextSecondary}" VerticalAlignment="Center" Margin="16,0,8,0"/>
-            <TextBox x:Name="RowsBox" Width="50" Background="{StaticResource Brush.BgCardHover}" Foreground="{StaticResource Brush.TextPrimary}"
-                     BorderThickness="0" Padding="8,6" TextChanged="LayoutBox_TextChanged"/>
-            <Button Content="清空全部" Click="ClearAllButton_Click" HorizontalAlignment="Right"
-                    Margin="24,0,0,0" Padding="12,5" Background="{StaticResource Brush.BgCardHover}" Foreground="{StaticResource Brush.Danger}"
-                    BorderThickness="0" Cursor="Hand"/>
-        </StackPanel>
+        <Border Grid.Row="0" Background="{DynamicResource Brush.BgCard}"
+                BorderBrush="{DynamicResource Brush.Stroke}" BorderThickness="1"
+                CornerRadius="12" Padding="14,10" Margin="0,0,0,12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="页名" Style="{StaticResource Text.FieldLabel}" Margin="0,0,8,0"/>
+                <TextBox x:Name="NameBox" Grid.Column="1" Width="150" Margin="0,0,18,0"/>
+                <TextBlock Grid.Column="2" Text="列数" Style="{StaticResource Text.FieldLabel}" Margin="0,0,8,0"/>
+                <TextBox x:Name="ColumnsBox" Grid.Column="3" Width="56" Margin="0,0,18,0"
+                         TextChanged="LayoutBox_TextChanged"/>
+                <TextBlock Grid.Column="4" Text="行数" Style="{StaticResource Text.FieldLabel}" Margin="0,0,8,0"/>
+                <TextBox x:Name="RowsBox" Grid.Column="5" Width="56" TextChanged="LayoutBox_TextChanged"/>
+                <Button Grid.Column="7" Click="ClearAllButton_Click" Style="{StaticResource Btn.Danger}"
+                        Padding="14,6">
+                    <StackPanel Orientation="Horizontal">
+                        <views:IconView Kind="Trash" Size="14"/>
+                        <TextBlock Text="清空全部" Margin="6,0,0,0"/>
+                    </StackPanel>
+                </Button>
+            </Grid>
+        </Border>
 
         <!-- 提示 -->
-        <TextBlock DockPanel.Dock="Top" Foreground="{StaticResource Brush.TextMuted}" FontSize="11" Margin="0,0,0,8"
-                   Text="点击格子选择动作；右键点击清除。格子从左到右、从上到下排列。"/>
+        <TextBlock Grid.Row="1" Foreground="{DynamicResource Brush.TextMuted}" FontSize="12" Margin="4,0,0,10"
+                   Text="提示：点击格子可指定动作；右键点击可清除该格子。"/>
 
-        <!-- 网格 -->
-        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
-            <UniformGrid x:Name="CellsGrid" MouseRightButtonUp="CellsGrid_MouseRightButtonUp"/>
-        </ScrollViewer>
-    </DockPanel>
+        <!-- 网格区域 -->
+        <Border Grid.Row="2" Background="{DynamicResource Brush.BgCard}"
+                BorderBrush="{DynamicResource Brush.Stroke}" BorderThickness="1" CornerRadius="14" Padding="8">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                <UniformGrid x:Name="CellsGrid" MouseRightButtonUp="CellsGrid_MouseRightButtonUp"/>
+            </ScrollViewer>
+        </Border>
+
+        <!-- 底部按钮 -->
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+            <Button Content="保存" IsDefault="True" Click="SaveButton_Click"
+                    Style="{StaticResource DialogPrimaryButton}" Margin="0,0,10,0"/>
+            <Button Content="取消" IsCancel="True" Style="{StaticResource DialogGhostButton}"/>
+        </StackPanel>
+    </Grid>
 </Window>

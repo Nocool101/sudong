@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    「速动」应用图标生成器（独立工具，不加入 QuickLauncher.sln）
+
+    用法（在 tools/MakeIcon 目录下）：
+      dotnet run  variant=all   out=../../src/QuickLauncher.App/assets
+      dotnet run  variant=bolt   preview=D:/tmp/shots
+
+    说明：旧版 tools/make_icon.py 依赖 Python + PIL，本机没有 Python 环境，
+    故改用 WPF 重写（渲染质量更好：真实渐变 / 辉光 / 阴影），产物完全一致。
+  -->
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net7.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>MakeIcon</RootNamespace>
+    <AssemblyName>MakeIcon</AssemblyName>
+    <EnableDefaultApplicationDefinition>false</EnableDefaultApplicationDefinition>
+  </PropertyGroup>
+
+</Project>

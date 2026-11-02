@@ -70,7 +70,20 @@ public sealed class PanelTrigger
 /// </summary>
 public sealed class AppearanceSettings
 {
-    public string Theme { get; set; } = "Dark";
+    /// <summary>
+    /// 主题：System（跟随系统深/浅色，默认）/ Dark / Light。
+    /// </summary>
+    public string Theme { get; set; } = "System";
+
+    /// <summary>
+    /// 用户是否显式选择过主题。
+    ///
+    /// 【为什么需要】本项之前只有硬编码的暗色主题，配置文件里存的 "Dark" 其实是
+    /// 老版本的默认值、而不是用户的选择。加入浅色/跟随系统后，若不区分，
+    /// 老用户会被永久钉死在暗色上。该标记为 false 时按「跟随系统」处理，
+    /// 用户在新设置页选过之后置为 true，此后严格按用户选择。
+    /// </summary>
+    public bool ThemeSelected { get; set; }
 
     public string AccentColor { get; set; } = "#FF0078D7";
 

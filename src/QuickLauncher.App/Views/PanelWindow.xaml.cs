@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -9,6 +9,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using QuickLauncher.App.Interaction;
+using QuickLauncher.App.Themes;
 using QuickLauncher.Models;
 
 namespace QuickLauncher.App.Views;
@@ -75,12 +76,37 @@ public partial class PanelWindow : Window
         {
             var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
             SetWindowLong(hwnd, GWL_EXSTYLE, GetWindowLong(hwnd, GWL_EXSTYLE) | WS_EX_NOACTIVATE);
+            // 开启系统磨砂：面板底色是半透明的，背后被真正模糊才像玻璃
+            TryApplyBackdrop();
         };
         Loaded += (_, _) =>
         {
             ClampToScreenAfterLayout();
             ForceTopmost();
         };
+        ThemeManager.ThemeChanged += OnThemeChanged;
+        Closed += (_, _) => ThemeManager.ThemeChanged -= OnThemeChanged;
+    }
+
+    /// <summary>为面板开启系统磨砂背板（失败也不影响使用，只是没有模糊效果）</summary>
+    private void TryApplyBackdrop()
+    {
+        try
+        {
+            var tint = ThemeManager.IsDark
+                ? System.Windows.Media.Color.FromArgb(0x80, 0x0A, 0x0D, 0x15)
+                : System.Windows.Media.Color.FromArgb(0x80, 0xF2, 0xF6, 0xFC);
+            WindowBackdrop.TryApply(this, tint);
+        }
+        catch
+        {
+            // 没有磨砂背板也不影响使用
+        }
+    }
+
+    private void OnThemeChanged(bool isDark)
+    {
+        Dispatcher.BeginInvoke(new Action(TryApplyBackdrop));
     }
 
     private const int WS_EX_NOACTIVATE = 0x08000000;
@@ -315,10 +341,23 @@ public partial class PanelWindow : Window
         PrevPageButton.IsEnabled = activeIndex > 0;
         NextPageButton.IsEnabled = activeIndex < activePages - 1;
 
-        // 固定高度一屏全显（标题+搜索+底栏+边距≈106，每行 68px=按钮64+间距4，下区标题/分隔 34）
-        var gRows = Math.Max(1, (int)Math.Ceiling(GlobalGrid.Children.Count / 4.0));
-        var cRows = Math.Max(1, (int)Math.Ceiling(ContextGrid.Children.Count / 4.0));
-        Height = 106 + (gRows + cRows) * 78 + 34;
+        // 固定高度一屏全显
+        UpdatePanelHeight();
+    }
+
+    /// <summary>
+    /// 按内容的实际测量高度设置窗口高度（一屏全显，不出现滚动条）。
+    ///
+    /// 【为什么不再用魔法数字】内容容器四行全部 Height=Auto，与窗口高度无关，
+    /// 直接量一次就能得到真实所需高度；旧写法按「固定行高 × 行数」推算，
+    /// 一旦某处间距调整就会与实际内容对不上（表现为底栏被压扁或留白）。
+    /// </summary>
+    private void UpdatePanelHeight()
+    {
+        var available = new Size(Math.Max(240, Width - 4), double.PositiveInfinity);
+        ContentGrid.Measure(available);
+        var needed = ContentGrid.DesiredSize.Height + 2 /* 外框描边 */ + 8 /* 下边距 */;
+        Height = Math.Ceiling(needed);
     }
 
     /// <summary>
@@ -390,7 +429,7 @@ public partial class PanelWindow : Window
         {
             Text = name,
             FontSize = 10,
-            Foreground = new SolidColorBrush(Color.FromRgb(0xE6, 0xE9, 0xF0)),
+            Foreground = ThemeManager.Get("Brush.TextPrimary"),
             HorizontalAlignment = HorizontalAlignment.Center,
             TextTrimming = TextTrimming.CharacterEllipsis,
             MaxWidth = 80,
@@ -422,7 +461,7 @@ public partial class PanelWindow : Window
         var menu = new System.Windows.Controls.ContextMenu();
         var editItem = new MenuItem { Header = "编辑" };
         editItem.Click += (_, _) => ActionEditRequested?.Invoke(action);
-        var deleteItem = new MenuItem { Header = "删除", Foreground = new SolidColorBrush(Color.FromRgb(0xE7, 0x48, 0x56)) };
+        var deleteItem = new MenuItem { Header = "删除", Foreground = ThemeManager.Get("Brush.Danger") };
         deleteItem.Click += (_, _) => ActionDeleteRequested?.Invoke(action);
         menu.Items.Add(editItem);
         menu.Items.Add(deleteItem);
@@ -497,14 +536,14 @@ public partial class PanelWindow : Window
         {
             Style = (Style)FindResource("ActionButton"),
             Tag = cellIndex,
-            Background = new SolidColorBrush(Color.FromArgb(0x0F, 0xFF, 0xFF, 0xFF)),
+            Background = ThemeManager.Get("Brush.TileEmpty"),
             AllowDrop = true
         };
         btn.Content = new TextBlock
         {
             Text = "＋",
             FontSize = 20,
-            Foreground = new SolidColorBrush(Color.FromRgb(0x6B, 0x72, 0x80))
+            Foreground = ThemeManager.Get("Brush.TextMuted")
         };
         btn.ToolTip = "添加动作到此位置";
         btn.Click += (_, _) =>
@@ -553,7 +592,7 @@ public partial class PanelWindow : Window
         {
             Text = ExtractIconGlyph(iconDesc),
             FontSize = size + 2,
-            Foreground = Brushes.White,
+            Foreground = ThemeManager.Get("Brush.TextPrimary"),
             HorizontalAlignment = HorizontalAlignment.Center,
             Margin = new Thickness(0, 0, 0, 6)
         };

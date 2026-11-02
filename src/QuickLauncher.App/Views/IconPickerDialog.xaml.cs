@@ -1,9 +1,10 @@
-using System;
+﻿using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Microsoft.Win32;
+using QuickLauncher.App.Themes;
 
 namespace QuickLauncher.App.Views;
 
@@ -82,7 +83,7 @@ public partial class IconPickerDialog : Window
                 Margin = new Thickness(3),
                 FontSize = 20,
                 Background = new SolidColorBrush(Color.FromArgb(0x22, 0xFF, 0xFF, 0xFF)),
-                Foreground = Brushes.White,
+                Foreground = ThemeManager.Get("Brush.TextPrimary"),
                 BorderThickness = new Thickness(0),
                 Cursor = System.Windows.Input.Cursors.Hand,
                 Tag = c

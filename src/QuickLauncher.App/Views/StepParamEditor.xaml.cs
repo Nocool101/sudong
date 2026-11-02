@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -7,6 +7,7 @@ using System.Windows.Data;
 using Microsoft.Win32;
 using QuickLauncher.Engine;
 using QuickLauncher.Models;
+using QuickLauncher.App.Themes;
 
 namespace QuickLauncher.App.Views;
 
@@ -120,7 +121,7 @@ public partial class StepParamEditor : UserControl
         panel.Children.Add(new TextBlock
         {
             Text = p.DisplayName + (p.Required ? " *" : ""),
-            Foreground = System.Windows.Media.Brushes.LightGray,
+            Foreground = ThemeManager.Get("Brush.TextSecondary"),
             FontSize = 12,
             Margin = new Thickness(0, 0, 0, 4)
         });
@@ -130,7 +131,7 @@ public partial class StepParamEditor : UserControl
             panel.Children.Add(new TextBlock
             {
                 Text = p.Description,
-                Foreground = System.Windows.Media.Brushes.Gray,
+                Foreground = ThemeManager.Get("Brush.TextMuted"),
                 FontSize = 10,
                 Margin = new Thickness(0, 0, 0, 4),
                 TextWrapping = TextWrapping.Wrap
@@ -174,7 +175,7 @@ public partial class StepParamEditor : UserControl
                 emptyPanel.Children.Add(new TextBlock
                 {
                     Text = "（暂无动作页，请先在场景/页面管理中创建）",
-                    Foreground = System.Windows.Media.Brushes.Gray,
+                    Foreground = ThemeManager.Get("Brush.TextMuted"),
                     FontSize = 10,
                     Margin = new Thickness(0, 4, 0, 0)
                 });
@@ -204,7 +205,7 @@ public partial class StepParamEditor : UserControl
             {
                 IsChecked = bool.TryParse(current, out var b) && b,
                 Content = "启用",
-                Foreground = System.Windows.Media.Brushes.LightGray
+                Foreground = ThemeManager.Get("Brush.TextSecondary")
             };
             cb.Checked += (_, _) => SetValue(p.Name, "true");
             cb.Unchecked += (_, _) => SetValue(p.Name, "false");
@@ -219,8 +220,8 @@ public partial class StepParamEditor : UserControl
             var tb = new TextBox
             {
                 Text = current ?? "",
-                Background = System.Windows.Media.Brushes.White,
-                Foreground = System.Windows.Media.Brushes.Black,
+                Background = ThemeManager.Get("Brush.BgCard"),
+                Foreground = ThemeManager.Get("Brush.TextPrimary"),
                 Padding = new Thickness(6, 5, 6, 5),
                 AcceptsReturn = p.Multiline,
                 TextWrapping = p.Multiline ? TextWrapping.Wrap : TextWrapping.NoWrap,
@@ -238,8 +239,8 @@ public partial class StepParamEditor : UserControl
                     Content = "浏览...",
                     Margin = new Thickness(6, 0, 0, 0),
                     Padding = new Thickness(10, 4, 10, 4),
-                    Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x3F, 0x3F, 0x46)),
-                    Foreground = System.Windows.Media.Brushes.LightGray,
+                    Background = ThemeManager.Get("Brush.BgCardHover"),
+                    Foreground = ThemeManager.Get("Brush.TextSecondary"),
                     BorderThickness = new Thickness(0),
                     Cursor = System.Windows.Input.Cursors.Hand,
                     VerticalAlignment = VerticalAlignment.Top
@@ -270,7 +271,7 @@ public partial class StepParamEditor : UserControl
                     Content = "捕获按键",
                     Margin = new Thickness(6, 0, 0, 0),
                     Padding = new Thickness(10, 4, 10, 4),
-                    Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x00, 0x78, 0xD7)),
+                    Background = ThemeManager.Get("Brush.Brand"),
                     Foreground = System.Windows.Media.Brushes.White,
                     BorderThickness = new Thickness(0),
                     Cursor = System.Windows.Input.Cursors.Hand,
@@ -295,8 +296,8 @@ public partial class StepParamEditor : UserControl
                 Margin = new Thickness(6, 0, 0, 0),
                 Padding = new Thickness(8, 4, 8, 4),
                 FontFamily = new System.Windows.Media.FontFamily("Consolas"),
-                Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x3F, 0x3F, 0x46)),
-                Foreground = System.Windows.Media.Brushes.LightGray,
+                Background = ThemeManager.Get("Brush.BgCardHover"),
+                Foreground = ThemeManager.Get("Brush.TextSecondary"),
                 BorderThickness = new Thickness(0),
                 Cursor = System.Windows.Input.Cursors.Hand,
                 VerticalAlignment = VerticalAlignment.Top,
@@ -343,15 +344,15 @@ public partial class StepParamEditor : UserControl
         panel.Children.Add(new TextBlock
         {
             Text = $"结果（{resultName}）→ 变量",
-            Foreground = System.Windows.Media.Brushes.LightGray,
+            Foreground = ThemeManager.Get("Brush.TextSecondary"),
             FontSize = 12,
             Margin = new Thickness(0, 0, 0, 4)
         });
         var tb = new TextBox
         {
             Text = outputs.TryGetValue(resultName, out var v) ? v : "",
-            Background = System.Windows.Media.Brushes.White,
-            Foreground = System.Windows.Media.Brushes.Black,
+            Background = ThemeManager.Get("Brush.BgCard"),
+            Foreground = ThemeManager.Get("Brush.TextPrimary"),
             Padding = new Thickness(6, 5, 6, 5)
         };
         tb.TextChanged += (_, _) =>
